@@ -1,4 +1,4 @@
-import mongoose, { model } from "mongoose";
+import mongoose, { model, Document,Schema} from "mongoose";
 
 export enum UserRole {
   ADMIN = "ADMIN",
@@ -11,8 +11,6 @@ export interface IUser extends Document {
   password: string;
   roles: UserRole[];
 }
-
-const Schema = mongoose.Schema;
 
 const userSchema = new Schema<IUser>(
   {
