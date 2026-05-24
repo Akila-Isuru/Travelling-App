@@ -75,7 +75,7 @@ export const loginUser = async (req: Request, res: Response) => {
 
 export const getMyDetails = async (req: AuthRequest, res: Response) => {
   try {
-    const user = await UserModel.findOne(req.user.sub).select("-password");
+    const user = await UserModel.findById(req.user.sub).select("-password");
     if (!user) {
       return res.status(404).json({ message: "User not Found !" });
     }
