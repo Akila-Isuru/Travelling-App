@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
 import authRouter from "./routers/authRouter";
+import destinationRouter from "./routers/destinationRouter";
 import passport from "passport";
 import "./config/passport";
 
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use(passport.initialize());
 
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/destinations", destinationRouter);
 
 mongoose
   .connect(DB_URL)
