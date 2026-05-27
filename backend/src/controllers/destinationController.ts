@@ -48,3 +48,21 @@ export const getAllDestinations = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to get Destinations" });
   }
 };
+export const getDestinationBySlug = async (req: Request, res: Response) => {
+  try {
+    const { slug } = req.params;
+    console.log("Fetching destination with slug:", slug);
+
+    const destination = await DestinationModel.findOne({ slug: slug });
+
+    if (!destination) {
+      return res.status(404).json({ message: "Destination not found" });
+    }
+
+    console.log("Destination found:", destination.name);
+    res.status(200).json({ data: destination });
+  } catch (error) {
+    console.error("Error fetching destination by slug:", error);
+    res.status(500).json({ message: "Failed to get destination" });
+  }
+};

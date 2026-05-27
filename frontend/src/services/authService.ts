@@ -18,3 +18,7 @@ export const getMyDetails = async () => {
   const res = await api.get("/auth/me");
   return res.data;
 };
+export const logout = () => {
+  localStorage.removeItem("ACCESS_TOKEN");
+  localStorage.removeItem("REFRESH");
+};

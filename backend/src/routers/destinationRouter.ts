@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   createDestination,
   getAllDestinations,
+  getDestinationBySlug,
 } from "../controllers/destinationController";
 import { authenticate, requireRole } from "../middleware/auth";
 import { upload } from "../middleware/upload";
@@ -16,5 +17,6 @@ router.post(
   createDestination,
 );
 router.get("/", getAllDestinations);
+router.get("/slug/:slug", getDestinationBySlug);
 
 export default router;
