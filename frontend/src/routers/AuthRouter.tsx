@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
+import OAuthCallback from "../pages/OAuthCallback";
 
 type GuardProps = { children: ReactNode; roles?: string[] };
 
@@ -30,13 +31,14 @@ const AuthRouter = () => {
           element={
             <RequireAuth>
               <div className="p-10 text-center text-2xl font-bold text-green-600">
-                Welcome! 
+                Welcome!
               </div>
             </RequireAuth>
           }
         />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/oauth-callback" element={<OAuthCallback />} />
       </Routes>
     </BrowserRouter>
   );

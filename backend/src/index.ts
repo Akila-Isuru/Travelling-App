@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
 import authRouter from "./routers/authRouter";
+import passport from "passport";
+import "./config/passport";
 
 dotenv.config();
 
@@ -13,6 +15,7 @@ const DB_URL = process.env.DB_URL as string;
 
 app.use(cors());
 app.use(express.json());
+app.use(passport.initialize());
 
 app.use("/api/v1/auth", authRouter);
 
