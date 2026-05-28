@@ -8,7 +8,7 @@ export interface IBooking extends Document {
   checkOut: Date;
   guests: number;
   totalPrice: number;
-  status: "pending" | "confirmed" | "canceled";
+  status: "pending" | "confirmed" | "cancelled";
   specialRequests?: string;
   createdAt: Date;
 }
@@ -22,7 +22,7 @@ const bookingSchema = new Schema<IBooking>(
     },
     destination: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Destination",
+      ref: "DestinationModel",
       required: true,
     },
     checkIn: {

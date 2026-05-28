@@ -4,29 +4,36 @@ import { Link } from "react-router-dom";
 const Hero = () => {
   return (
     <div className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
-      {/* YouTube Background Video */}
-      <div className="absolute inset-0 w-full h-full">
+      <div
+        className="absolute inset-0 w-full h-full"
+        style={{ overflow: "hidden" }}
+      >
         <iframe
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full w-auto h-auto"
-          style={{ minWidth: "177.77vh", minHeight: "56.25vw" }}
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "100vw",
+            height: "56.25vw",
+            minHeight: "100vh",
+            minWidth: "177.78vh",
+            border: "none",
+            pointerEvents: "none",
+          }}
           src="https://www.youtube.com/embed/TlypXY8OOIQ?autoplay=1&mute=1&loop=1&playlist=TlypXY8OOIQ&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&fs=0&playsinline=1"
           title="Sri Lanka Tourism Video"
           frameBorder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
         />
       </div>
 
-      {/* Layered Overlays */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#0a1628]/70 via-[#0a1628]/30 to-[#0a1628]/85" />
       <div className="absolute inset-0 bg-gradient-to-r from-[#0a1628]/50 via-transparent to-transparent" />
 
-      {/* Decorative top border line */}
       <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-[#C9922A] to-transparent" />
 
-      {/* Content */}
       <div className="relative z-10 text-center text-white px-4 max-w-5xl mx-auto">
-        {/* Eyebrow */}
         <div className="inline-flex items-center gap-2 mb-6">
           <div className="w-8 h-px bg-[#C9922A]" />
           <span
@@ -38,7 +45,6 @@ const Hero = () => {
           <div className="w-8 h-px bg-[#C9922A]" />
         </div>
 
-        {/* Main heading */}
         <h1
           className="text-[3.2rem] md:text-[5.5rem] font-normal text-white leading-none mb-3 tracking-tight"
           style={{
@@ -63,7 +69,6 @@ const Hero = () => {
           one breathtaking destination.
         </p>
 
-        {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <Link
             to="/destinations"
@@ -92,7 +97,6 @@ const Hero = () => {
         </div>
       </div>
 
-      {/* Scroll Indicator */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
         <span className="text-white/40 text-[10px] tracking-[0.3em] uppercase">
           Scroll
@@ -100,7 +104,6 @@ const Hero = () => {
         <div className="w-px h-10 bg-gradient-to-b from-white/40 to-transparent animate-pulse" />
       </div>
 
-      {/* Bottom stat bar */}
       <div className="absolute bottom-0 left-0 right-0 z-10 border-t border-white/10 bg-[#0a1628]/60 backdrop-blur-sm">
         <div className="max-w-5xl mx-auto px-6 py-4 grid grid-cols-3 divide-x divide-white/10">
           {[
