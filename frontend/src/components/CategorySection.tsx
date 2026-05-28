@@ -16,91 +16,102 @@ import img11 from "../assets/image-11.avif";
 const categories = [
   {
     id: 1,
-    name: "WILDLIFE",
+    name: "Wildlife",
     image: img1,
     description: "Yala National Park Safari",
     location: "Southern Province",
     duration: "Full Day",
+    tag: "01",
   },
   {
     id: 2,
-    name: "SAFARI",
+    name: "Safari",
     image: img2,
     description: "Meet the gentle giants",
     location: "Minneriya",
     duration: "Half Day",
+    tag: "02",
   },
   {
     id: 3,
-    name: "HERITAGE",
+    name: "Heritage",
     image: img3,
     description: "Temple of the Tooth Relic",
     location: "Kandy",
-    duration: "3-4 Hours",
+    duration: "3–4 Hours",
+    tag: "03",
   },
   {
     id: 4,
-    name: "ANCIENT",
+    name: "Ancient",
     image: img4,
     description: "Sacred historical sites",
     location: "Anuradhapura",
     duration: "Full Day",
+    tag: "04",
   },
   {
     id: 5,
-    name: "PRISTINE",
+    name: "Pristine",
     image: img5,
     description: "Golden sunny beaches",
     location: "Bentota",
     duration: "Flexible",
+    tag: "05",
   },
   {
     id: 6,
-    name: "CULTURAL",
+    name: "Cultural",
     image: img6,
     description: "Traditional mask art",
     location: "Ambalangoda",
-    duration: "2-3 Hours",
+    duration: "2–3 Hours",
+    tag: "06",
   },
   {
     id: 7,
-    name: "COASTAL",
+    name: "Coastal",
     image: img7,
     description: "View the vast ocean",
     location: "Galle",
     duration: "Sunset Tour",
+    tag: "07",
   },
   {
     id: 8,
-    name: "TROPICAL",
+    name: "Tropical",
     image: img8,
     description: "Island paradise vibes",
     location: "Mirissa",
     duration: "Weekend",
+    tag: "08",
   },
   {
     id: 9,
-    name: "SPIRITUAL",
+    name: "Spiritual",
     image: img9,
-    description: "Serene sunset moments",
+    description: "Serene summit moments",
     location: "Sigiriya",
     duration: "Sunset Hours",
+    tag: "09",
   },
   {
     id: 10,
-    name: "WELLNESS",
+    name: "Wellness",
     image: img10,
     description: "Ayurvedic spa treatments",
     location: "Beruwala",
     duration: "2+ Hours",
+    tag: "10",
   },
   {
     id: 11,
-    name: "THERAPY",
+    name: "Therapy",
     image: img11,
     description: "Traditional foot massage",
     location: "Colombo",
     duration: "1 Hour",
+    tag: "11",
   },
 ];
 
@@ -109,10 +120,8 @@ const CategorySection = () => {
   const [direction, setDirection] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
-  // Auto-slide with smoother timing
   useEffect(() => {
     if (!isAutoPlaying) return;
-    
     const interval = setInterval(() => {
       setDirection(1);
       setCurrentIndex((prev) => (prev + 1) % categories.length);
@@ -120,255 +129,261 @@ const CategorySection = () => {
     return () => clearInterval(interval);
   }, [isAutoPlaying]);
 
-  const nextSlide = useCallback(() => {
-    setIsAutoPlaying(false);
-    setDirection(1);
-    setCurrentIndex((prev) => (prev + 1) % categories.length);
-    setTimeout(() => setIsAutoPlaying(true), 10000);
-  }, []);
-
-  const prevSlide = useCallback(() => {
-    setIsAutoPlaying(false);
-    setDirection(-1);
-    setCurrentIndex((prev) => (prev - 1 + categories.length) % categories.length);
-    setTimeout(() => setIsAutoPlaying(true), 10000);
-  }, []);
-
-  // Smoother slide variants with will-change for performance
-  const slideVariants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? "100%" : "-100%",
-      opacity: 0,
-      scale: 0.98,
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-      scale: 1,
-      transition: {
-        x: { type: "spring", stiffness: 400, damping: 40, mass: 0.8 },
-        opacity: { duration: 0.4, ease: "easeOut" },
-        scale: { duration: 0.4, ease: "easeOut" },
-      },
+  const goTo = useCallback(
+    (idx: number) => {
+      setIsAutoPlaying(false);
+      setDirection(idx > currentIndex ? 1 : -1);
+      setCurrentIndex(idx);
+      setTimeout(() => setIsAutoPlaying(true), 10000);
     },
-    exit: (direction: number) => ({
-      x: direction > 0 ? "-100%" : "100%",
-      opacity: 0,
-      scale: 0.98,
-      transition: {
-        x: { type: "spring", stiffness: 400, damping: 40, mass: 0.8 },
-        opacity: { duration: 0.3, ease: "easeIn" },
-        scale: { duration: 0.3, ease: "easeIn" },
-      },
-    }),
-  };
+    [currentIndex],
+  );
 
-  // Preload next image for smoother transition
+  const nextSlide = useCallback(
+    () => goTo((currentIndex + 1) % categories.length),
+    [currentIndex, goTo],
+  );
+  const prevSlide = useCallback(
+    () => goTo((currentIndex - 1 + categories.length) % categories.length),
+    [currentIndex, goTo],
+  );
+
+  // Preload next image
   useEffect(() => {
     const nextIndex = (currentIndex + 1) % categories.length;
     const img = new Image();
     img.src = categories[nextIndex].image;
   }, [currentIndex]);
 
+  const slideVariants = {
+    enter: (dir: number) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
+    center: {
+      x: 0,
+      opacity: 1,
+      transition: {
+        x: { type: "spring", stiffness: 350, damping: 38 },
+        opacity: { duration: 0.35 },
+      },
+    },
+    exit: (dir: number) => ({
+      x: dir > 0 ? "-100%" : "100%",
+      opacity: 0,
+      transition: {
+        x: { type: "spring", stiffness: 350, damping: 38 },
+        opacity: { duration: 0.25 },
+      },
+    }),
+  };
+
+  const current = categories[currentIndex];
+
   return (
-    <section className="relative min-h-screen bg-black w-full overflow-hidden">
-      
-      {/* Full Screen Carousel */}
-      <div className="relative w-full h-screen">
-        
-        {/* Header - Top Center */}
-        <div className="absolute top-0 left-0 right-0 z-30 text-center pt-8 md:pt-12 px-4 pointer-events-none">
-          <div className="inline-block mb-3">
-            <div className="px-4 py-2 bg-black/40 backdrop-blur-md rounded-full border border-white/20">
-              <span className="text-xs md:text-sm uppercase tracking-wider text-white/90">
-                Discover Paradise
+    <>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap');`}</style>
+
+      <section className="relative min-h-screen bg-[#0a1628] w-full overflow-hidden">
+        <div className="relative w-full h-screen">
+          {/* Top bar - category counter */}
+          <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between pt-6 px-6 md:px-12 pointer-events-none">
+            <div className="flex items-center gap-3">
+              <span
+                className="text-[#C9922A] text-xs tracking-[0.3em] uppercase font-light"
+                style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}
+              >
+                Explore Sri Lanka
               </span>
+              <div className="w-6 h-px bg-[#C9922A]/40" />
+            </div>
+            <div className="text-white/30 text-[11px] tracking-widest">
+              <span className="text-[#C9922A]">
+                {String(currentIndex + 1).padStart(2, "0")}
+              </span>
+              {" / "}
+              {String(categories.length).padStart(2, "0")}
             </div>
           </div>
-          
-          <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-2">
-            Explore
-            <span className="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent">
-              {" "}Sri Lanka
-            </span>
-          </h2>
-          
-          <div className="w-20 h-0.5 bg-gradient-to-r from-yellow-400 to-red-400 mx-auto rounded-full" />
-        </div>
 
-        {/* Navigation Buttons - Left and Right */}
-        <button
-          onClick={prevSlide}
-          className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-30 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full p-3 md:p-4 transition-all duration-300 hover:scale-110 active:scale-95"
-          aria-label="Previous slide"
-        >
-          <svg className="w-5 h-5 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        
-        <button
-          onClick={nextSlide}
-          className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-30 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full p-3 md:p-4 transition-all duration-300 hover:scale-110 active:scale-95"
-          aria-label="Next slide"
-        >
-          <svg className="w-5 h-5 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-
-        {/* Main Slides - Optimized for smoothness */}
-        <div className="relative w-full h-full overflow-hidden">
-          <AnimatePresence initial={false} custom={direction} mode="wait">
-            <motion.div
-              key={currentIndex}
-              custom={direction}
-              variants={slideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              className="absolute inset-0 w-full h-full will-change-transform"
-              style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
-            >
-              {/* Background Image with GPU acceleration */}
-              <div className="absolute inset-0 w-full h-full">
-                <img
-                  src={categories[currentIndex].image}
-                  alt={categories[currentIndex].name}
-                  className="w-full h-full object-cover object-center will-change-transform"
-                  style={{ imageRendering: "auto" }}
-                  loading="eager"
-                />
-                {/* Gradient Overlays */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent" />
-              </div>
-
-              {/* Content - Bottom Left */}
-              <div className="absolute bottom-0 left-0 right-0 z-20 p-6 md:p-12 lg:p-16">
-                <div className="max-w-4xl">
-                  {/* Tags */}
-                  <div className="flex gap-2 mb-3 flex-wrap">
-                    <span className="px-3 py-1.5 bg-black/50 backdrop-blur-md rounded-full text-xs md:text-sm text-white border border-white/20">
-                      {categories[currentIndex].duration}
-                    </span>
-                    <span className="px-3 py-1.5 bg-black/50 backdrop-blur-md rounded-full text-xs md:text-sm text-white border border-white/20">
-                      {categories[currentIndex].location}
-                    </span>
-                  </div>
-
-                  {/* Title */}
-                  <motion.h2
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.5 }}
-                    className="text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-3 tracking-tighter"
-                  >
-                    {categories[currentIndex].name}
-                  </motion.h2>
-
-                  {/* Description */}
-                  <motion.p
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3, duration: 0.5 }}
-                    className="text-base md:text-lg text-gray-200 mb-5 max-w-2xl"
-                  >
-                    {categories[currentIndex].description}
-                  </motion.p>
-
-                  {/* CTA Button */}
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.4, duration: 0.3 }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="inline-flex items-center gap-2 px-6 md:px-8 py-2.5 md:py-3 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full text-white font-semibold text-sm md:text-base shadow-2xl"
-                  >
-                    <span>Explore {categories[currentIndex].name}</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-
-        {/* Slide Indicators - Bottom Center */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex gap-2">
-          {categories.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => {
-                setIsAutoPlaying(false);
-                setDirection(idx > currentIndex ? 1 : -1);
-                setCurrentIndex(idx);
-                setTimeout(() => setIsAutoPlaying(true), 10000);
-              }}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                idx === currentIndex 
-                  ? "w-8 bg-yellow-400" 
-                  : "w-4 bg-white/40 hover:bg-white/60"
-              }`}
-              aria-label={`Go to slide ${idx + 1}`}
-            />
-          ))}
-        </div>
-
-        {/* Thumbnail Navigation - RIGHT SIDE CORNER */}
-        <div className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-30">
-          <div 
-            className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto py-2 px-1"
-            style={{ 
-              scrollbarWidth: "thin", 
-              msOverflowStyle: "none",
-              WebkitOverflowScrolling: "touch"
-            }}
-          >
-            {categories.map((cat, idx) => (
-              <button
-                key={cat.id}
-                onClick={() => {
-                  setIsAutoPlaying(false);
-                  setDirection(idx > currentIndex ? 1 : -1);
-                  setCurrentIndex(idx);
-                  setTimeout(() => setIsAutoPlaying(true), 10000);
-                }}
-                className={`relative flex-shrink-0 w-12 h-12 md:w-16 md:h-16 rounded-xl overflow-hidden transition-all duration-300 ${
-                  idx === currentIndex 
-                    ? "ring-3 ring-yellow-400 scale-110 shadow-2xl" 
-                    : "ring-1 ring-white/40 hover:ring-white/80 opacity-70 hover:opacity-100"
-                }`}
+          {/* Slides */}
+          <div className="relative w-full h-full overflow-hidden">
+            <AnimatePresence initial={false} custom={direction} mode="wait">
+              <motion.div
+                key={currentIndex}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                className="absolute inset-0 w-full h-full will-change-transform"
+                style={{ backfaceVisibility: "hidden" }}
               >
-                <img
-                  src={cat.image}
-                  alt={cat.name}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-                <div className={`absolute inset-0 bg-black/60 flex items-center justify-center transition-opacity duration-300 ${
-                  idx === currentIndex ? "opacity-0" : "opacity-100"
-                }`}>
-                  <span className="text-white text-[10px] md:text-xs font-bold text-center px-1 leading-tight">
-                    {cat.name.split(" ")[0].substring(0, 4)}
-                  </span>
+                {/* Background Image */}
+                <div className="absolute inset-0 w-full h-full">
+                  <img
+                    src={current.image}
+                    alt={current.name}
+                    className="w-full h-full object-cover object-center"
+                    loading="eager"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628] via-[#0a1628]/40 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#0a1628]/60 via-transparent to-transparent" />
                 </div>
-              </button>
+
+                {/* Slide Content */}
+                <div className="absolute bottom-0 left-0 right-0 z-20 p-6 md:p-12 lg:p-16">
+                  <div className="max-w-2xl">
+                    {/* Meta tags */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-[#C9922A] text-[10px] tracking-[0.3em] uppercase font-light border border-[#C9922A]/30 px-3 py-1">
+                        {current.duration}
+                      </span>
+                      <div className="w-1 h-1 rounded-full bg-white/20" />
+                      <span className="text-white/50 text-[10px] tracking-widest uppercase font-light">
+                        {current.location}
+                      </span>
+                    </div>
+
+                    {/* Category name */}
+                    <motion.h2
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15, duration: 0.5 }}
+                      className="text-white font-light leading-none mb-2"
+                      style={{
+                        fontFamily: "'Cormorant Garamond', Georgia, serif",
+                        fontSize: "clamp(3.5rem, 10vw, 7rem)",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      {current.name}
+                    </motion.h2>
+
+                    {/* Description */}
+                    <motion.p
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.25, duration: 0.5 }}
+                      className="text-white/60 text-sm font-light tracking-wide mb-7"
+                    >
+                      {current.description}
+                    </motion.p>
+
+                    {/* CTA */}
+                    <motion.button
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.35, duration: 0.4 }}
+                      className="inline-flex items-center gap-3 text-[#C9922A] text-xs tracking-[0.25em] uppercase font-light group"
+                    >
+                      <span>Explore {current.name}</span>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-6 h-px bg-[#C9922A] group-hover:w-10 transition-all duration-300" />
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M17 8l4 4m0 0l-4 4m4-4H3"
+                          />
+                        </svg>
+                      </div>
+                    </motion.button>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Left Nav Arrow */}
+          <button
+            onClick={prevSlide}
+            className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center border border-white/20 text-white/60 hover:border-[#C9922A] hover:text-[#C9922A] transition-all duration-300"
+            aria-label="Previous"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+
+          {/* Right Nav Arrow */}
+          <button
+            onClick={nextSlide}
+            className="absolute right-20 md:right-28 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center border border-white/20 text-white/60 hover:border-[#C9922A] hover:text-[#C9922A] transition-all duration-300"
+            aria-label="Next"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+
+          {/* Progress dots */}
+          <div className="absolute bottom-6 left-6 md:left-12 z-30 flex gap-1.5">
+            {categories.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => goTo(idx)}
+                className={`h-px transition-all duration-400 ${idx === currentIndex ? "w-8 bg-[#C9922A]" : "w-4 bg-white/25 hover:bg-white/50"}`}
+                aria-label={`Slide ${idx + 1}`}
+              />
             ))}
           </div>
-        </div>
 
-        {/* Scroll Hint */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 animate-bounce pointer-events-none">
-          <div className="w-5 h-8 border border-white/30 rounded-full flex justify-center">
-            <div className="w-1 h-1.5 bg-white/40 rounded-full mt-1.5 animate-ping" />
+          {/* Right Thumbnail Strip */}
+          <div className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 z-30">
+            <div
+              className="flex flex-col gap-2 max-h-[55vh] overflow-y-auto"
+              style={{ scrollbarWidth: "none" }}
+            >
+              {categories.map((cat, idx) => (
+                <button
+                  key={cat.id}
+                  onClick={() => goTo(idx)}
+                  className={`relative flex-shrink-0 w-11 h-11 md:w-14 md:h-14 overflow-hidden transition-all duration-300 ${
+                    idx === currentIndex
+                      ? "ring-1 ring-[#C9922A] scale-105"
+                      : "opacity-50 hover:opacity-80"
+                  }`}
+                >
+                  <img
+                    src={cat.image}
+                    alt={cat.name}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  {idx !== currentIndex && (
+                    <div className="absolute inset-0 bg-[#0a1628]/60" />
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 };
 

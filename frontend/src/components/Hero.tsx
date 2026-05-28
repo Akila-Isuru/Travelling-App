@@ -4,41 +4,74 @@ import { Link } from "react-router-dom";
 const Hero = () => {
   return (
     <div className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
-      
-      {/* YouTube Background Video - Clean, No Controls */}
+      {/* YouTube Background Video */}
       <div className="absolute inset-0 w-full h-full">
         <iframe
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full w-auto h-auto"
-          src="https://www.youtube.com/embed/TlypXY8OOIQ?autoplay=1&mute=1&loop=1&playlist=TlypXY8OOIQ&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&fs=0&playsinline=1&color=white&start=0"
+          style={{ minWidth: "177.77vh", minHeight: "56.25vw" }}
+          src="https://www.youtube.com/embed/TlypXY8OOIQ?autoplay=1&mute=1&loop=1&playlist=TlypXY8OOIQ&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&fs=0&playsinline=1"
           title="Sri Lanka Tourism Video"
           frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
-        ></iframe>
+        />
       </div>
 
-      {/* Dark Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"></div>
+      {/* Layered Overlays */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0a1628]/70 via-[#0a1628]/30 to-[#0a1628]/85" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#0a1628]/50 via-transparent to-transparent" />
 
-      {/* Blue tint overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-900/20 to-transparent mix-blend-overlay"></div>
+      {/* Decorative top border line */}
+      <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-[#C9922A] to-transparent" />
 
       {/* Content */}
-      <div className="relative z-10 text-center text-white px-4 max-w-6xl mx-auto">
-        <h1 className="text-5xl md:text-7xl font-bold mb-4 tracking-wide drop-shadow-2xl animate-fade-in">
-          AN ISLAND ESCAPE
-          <span className="block text-3xl md:text-5xl mt-2 drop-shadow-xl">
-            AWAITS YOU
+      <div className="relative z-10 text-center text-white px-4 max-w-5xl mx-auto">
+        {/* Eyebrow */}
+        <div className="inline-flex items-center gap-2 mb-6">
+          <div className="w-8 h-px bg-[#C9922A]" />
+          <span
+            className="text-[#C9922A] text-xs tracking-[0.35em] uppercase font-light"
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}
+          >
+            Pearl of the Indian Ocean
           </span>
+          <div className="w-8 h-px bg-[#C9922A]" />
+        </div>
+
+        {/* Main heading */}
+        <h1
+          className="text-[3.2rem] md:text-[5.5rem] font-normal text-white leading-none mb-3 tracking-tight"
+          style={{
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontStyle: "italic",
+          }}
+        >
+          An Island Escape
         </h1>
-        <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 text-gray-100 drop-shadow-lg animate-fade-in-up">
-          Discover the Pearl of the Indian Ocean - Where ancient heritage meets
-          pristine beaches
+        <p
+          className="text-[2rem] md:text-[3.2rem] font-light text-[#C9922A] leading-none mb-8 tracking-widest uppercase"
+          style={{
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            letterSpacing: "0.25em",
+          }}
+        >
+          Awaits You
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up">
+
+        <p className="text-sm md:text-base max-w-xl mx-auto mb-10 text-white/70 font-light tracking-wide leading-relaxed">
+          Ancient heritage, untouched beaches, and timeless traditions — all in
+          one breathtaking destination.
+        </p>
+
+        {/* CTA Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <Link
             to="/destinations"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+            className="group relative overflow-hidden px-9 py-3.5 bg-[#C9922A] text-white text-xs tracking-[0.2em] uppercase font-light transition-all duration-500 hover:bg-[#b07d20]"
+            style={{
+              clipPath:
+                "polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))",
+            }}
           >
             Explore Destinations
           </Link>
@@ -49,28 +82,45 @@ const Hero = () => {
                 "_blank",
               )
             }
-            className="border-2 border-white hover:bg-white hover:text-blue-800 text-white px-8 py-3 rounded-full font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+            className="group flex items-center gap-3 px-9 py-3.5 border border-white/30 text-white text-xs tracking-[0.2em] uppercase font-light transition-all duration-300 hover:border-[#C9922A] hover:text-[#C9922A]"
           >
+            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
             Watch Video
           </button>
         </div>
       </div>
 
       {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce cursor-pointer z-10">
-        <svg
-          className="w-6 h-6 text-white drop-shadow-lg"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 14l-7 7m0 0l-7-7m7 7V3"
-          />
-        </svg>
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
+        <span className="text-white/40 text-[10px] tracking-[0.3em] uppercase">
+          Scroll
+        </span>
+        <div className="w-px h-10 bg-gradient-to-b from-white/40 to-transparent animate-pulse" />
+      </div>
+
+      {/* Bottom stat bar */}
+      <div className="absolute bottom-0 left-0 right-0 z-10 border-t border-white/10 bg-[#0a1628]/60 backdrop-blur-sm">
+        <div className="max-w-5xl mx-auto px-6 py-4 grid grid-cols-3 divide-x divide-white/10">
+          {[
+            { num: "330+", label: "Destinations" },
+            { num: "2,000+", label: "Km of Coastline" },
+            { num: "8", label: "UNESCO Sites" },
+          ].map((item) => (
+            <div key={item.label} className="text-center px-4">
+              <p
+                className="text-[#C9922A] text-lg font-light"
+                style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}
+              >
+                {item.num}
+              </p>
+              <p className="text-white/50 text-[10px] tracking-widest uppercase mt-0.5">
+                {item.label}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
