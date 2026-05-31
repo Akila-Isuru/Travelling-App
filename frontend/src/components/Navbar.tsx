@@ -31,10 +31,10 @@ const Navbar = () => {
   ];
 
   const isActive = (path: string) => location.pathname === path;
+  const isAdmin = user?.roles?.includes("ADMIN");
 
   return (
     <>
-      {/* Google Font Import */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap');
         .nav-link-underline::after {
@@ -47,12 +47,9 @@ const Navbar = () => {
           transition: width 0.35s ease;
         }
         .nav-link-underline:hover::after,
-        .nav-link-underline.active::after {
-          width: 100%;
-        }
+        .nav-link-underline.active::after { width: 100%; }
         .scrolled .nav-link-underline::after { background: #1a3a5c; }
         .unscrolled .nav-link-underline::after { background: #C9922A; }
-        .nav-link-underline.active::after { width: 100% !important; }
       `}</style>
 
       <nav
@@ -62,7 +59,6 @@ const Navbar = () => {
             : "unscrolled bg-transparent"
         }`}
       >
-        {/* Top accent line - only when transparent */}
         {!isScrolled && (
           <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-[#C9922A]/60 to-transparent" />
         )}
@@ -72,33 +68,22 @@ const Navbar = () => {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">
               <div
-                className={`w-7 h-7 flex items-center justify-center text-sm border ${
-                  isScrolled
-                    ? "border-[#C9922A] text-[#C9922A]"
-                    : "border-white/50 text-white"
-                }`}
+                className={`w-7 h-7 flex items-center justify-center text-sm border ${isScrolled ? "border-[#C9922A] text-[#C9922A]" : "border-white/50 text-white"}`}
               >
                 SL
               </div>
               <span
-                className={`text-sm tracking-[0.25em] uppercase transition-colors ${
-                  isScrolled ? "text-[#1a3a5c]" : "text-white"
-                }`}
+                className={`text-sm tracking-[0.25em] uppercase transition-colors ${isScrolled ? "text-[#1a3a5c]" : "text-white"}`}
                 style={{
                   fontFamily: "'Cormorant Garamond', Georgia, serif",
                   letterSpacing: "0.3em",
                 }}
               >
-                Lanka
-                <span
-                  className={isScrolled ? "text-[#C9922A]" : "text-[#C9922A]"}
-                >
-                  Travel
-                </span>
+                Lanka<span className="text-[#C9922A]">Travel</span>
               </span>
             </Link>
 
-            {/* Desktop Nav - Center */}
+            {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-6 lg:gap-8">
               {navLinks.map((link) => (
                 <Link
@@ -120,19 +105,41 @@ const Navbar = () => {
             </div>
 
             {/* Right Side */}
-            <div className="hidden md:flex items-center gap-5">
+            <div className="hidden md:flex items-center gap-4">
               <button
-                className={`text-[11px] tracking-[0.2em] uppercase font-light transition-colors ${
-                  isScrolled
-                    ? "text-[#4a5568] hover:text-[#1a3a5c]"
-                    : "text-white/60 hover:text-white"
-                }`}
+                className={`text-[11px] tracking-[0.2em] uppercase font-light transition-colors ${isScrolled ? "text-[#4a5568] hover:text-[#1a3a5c]" : "text-white/60 hover:text-white"}`}
               >
                 EN
               </button>
 
               {user ? (
                 <div className="flex items-center gap-3">
+                  {/* Dashboard Link */}
+                  <Link
+                    to="/dashboard"
+                    className={`text-[11px] tracking-[0.18em] uppercase font-light transition-colors ${
+                      isScrolled
+                        ? "text-[#4a5568] hover:text-[#C9922A]"
+                        : "text-white/70 hover:text-[#C9922A]"
+                    } ${location.pathname === "/dashboard" ? "text-[#C9922A]" : ""}`}
+                  >
+                    My Trips
+                  </Link>
+
+                  {/* Admin Link */}
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      className={`text-[11px] tracking-[0.18em] uppercase font-light transition-colors ${
+                        isScrolled
+                          ? "text-[#4a5568] hover:text-[#C9922A]"
+                          : "text-white/70 hover:text-[#C9922A]"
+                      } ${location.pathname === "/admin" ? "text-[#C9922A]" : ""}`}
+                    >
+                      Admin
+                    </Link>
+                  )}
+
                   <span
                     className={`text-xs font-light ${isScrolled ? "text-[#4a5568]" : "text-white/70"}`}
                   >
@@ -167,11 +174,10 @@ const Navbar = () => {
               )}
             </div>
 
-            {/* Mobile Menu Toggle */}
+            {/* Mobile Toggle */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className={`md:hidden p-2 transition-colors ${isScrolled ? "text-[#1a3a5c]" : "text-white"}`}
-              aria-label="Toggle menu"
             >
               <div className="flex flex-col gap-1.5 w-5">
                 <span
@@ -196,16 +202,32 @@ const Navbar = () => {
                 <Link
                   key={link.name}
                   to={link.path}
-                  className={`block text-xs tracking-[0.25em] uppercase font-light transition-colors ${
-                    isActive(link.path)
-                      ? "text-[#C9922A]"
-                      : "text-white/70 hover:text-white"
-                  }`}
+                  className={`block text-xs tracking-[0.25em] uppercase font-light transition-colors ${isActive(link.path) ? "text-[#C9922A]" : "text-white/70 hover:text-white"}`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {link.name}
                 </Link>
               ))}
+              {user && (
+                <>
+                  <Link
+                    to="/dashboard"
+                    className="block text-xs tracking-[0.25em] uppercase font-light text-white/70 hover:text-[#C9922A] transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    My Trips
+                  </Link>
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      className="block text-xs tracking-[0.25em] uppercase font-light text-white/70 hover:text-[#C9922A] transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Admin Panel
+                    </Link>
+                  )}
+                </>
+              )}
               <div className="pt-4 border-t border-white/10 flex items-center gap-4">
                 <button className="text-xs tracking-[0.2em] uppercase text-white/50 font-light">
                   EN
