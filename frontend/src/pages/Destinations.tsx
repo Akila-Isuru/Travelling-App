@@ -40,16 +40,14 @@ const Destinations = () => {
       const params: any = {};
       if (search.trim()) params.search = search.trim();
 
-      // කැටගරි එක "All" නොවේ නම් පමණක් params වලට එකතු කරයි
+    
       if (activeCategory !== "All") {
         params.category = activeCategory;
       }
 
-      // API එකට parameters ටික Object එකක් විදිහට pass කරනවා
       const res = await getAllDestinations(params);
 
-      // Backend එකෙන් කෙලින්ම array එකක් එනවා නම් res.data,
-      // නැත්නම් res.data.data ද කියන එක ඔයාගේ backend එක අනුව චෙක් කරගන්න මචන්
+     
       if (res && res.data) {
         setDestinations(
           Array.isArray(res.data) ? res.data : res.data.data || [],

@@ -1,6 +1,5 @@
 import api from "../api/axiosInspector";
 
-// අපි මේකට interface එකක් දාලා object එකක් ගන්න විදිහට හදමු
 interface FetchParams {
   search?: string;
   category?: string;
