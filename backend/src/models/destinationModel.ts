@@ -8,6 +8,8 @@ export interface IDestination extends Document {
   location: string;
   category: string;
   pricePerNight: number;
+  ratingsAverage: number;
+  ratingsQuantity: number;
 }
 
 const destinationSchema = new Schema<IDestination>({
@@ -39,6 +41,17 @@ const destinationSchema = new Schema<IDestination>({
   pricePerNight: {
     type: Number,
     required: true,
+  },
+  ratingsAverage: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5,
+  },
+  ratingsQuantity: {
+    type: Number,
+    default: 0,
+    min: 0,
   },
 });
 
