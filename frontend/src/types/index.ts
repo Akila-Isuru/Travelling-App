@@ -15,6 +15,8 @@ export interface Destination {
   pricePerNight: number;
   images: string[];
   createdAt: string;
+  ratingsAverage?: number;
+  ratingsQuantity?: number;
 }
 
 export interface AuthContextType {

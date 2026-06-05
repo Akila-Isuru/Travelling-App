@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import LoadingSpinner from "../components/LoadingSpinner";
+import StarRating from "../components/StarRating";
+import ReviewForm from "../components/ReviewForm";
+import ReviewList from "../components/ReviewList";
 import { type Destination } from "../types";
 import { useAuth } from "../hooks/useAuth";
 import api from "../api/axiosInspector";
@@ -15,7 +18,7 @@ const DestinationDetail = () => {
   const [destination, setDestination] = useState<Destination | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
-  const [bookingOpen, setBookingOpen] = useState(false);
+
   const [bookingData, setBookingData] = useState({
     checkIn: "",
     checkOut: "",
@@ -26,11 +29,22 @@ const DestinationDetail = () => {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingError, setBookingError] = useState("");
 
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [avgRating, setAvgRating] = useState(0);
+  const [reviewsCount, setReviewsCount] = useState(0);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+
   useEffect(() => {
     const fetchDestination = async () => {
       try {
         const res = await api.get(`/destinations/slug/${slug}`);
-        setDestination(res.data.data);
+        const dest = res.data.data;
+        setDestination(dest);
+
+        if (dest.ratingsAverage) {
+          setAvgRating(dest.ratingsAverage);
+          setReviewsCount(dest.ratingsQuantity || 0);
+        }
       } catch (error) {
         console.error("Error:", error);
       } finally {
@@ -39,6 +53,36 @@ const DestinationDetail = () => {
     };
     fetchDestination();
   }, [slug]);
+
+  useEffect(() => {
+    if (destination?._id) {
+      fetchReviews();
+    }
+  }, [destination]);
+
+  const fetchReviews = async () => {
+    if (!destination?._id) return;
+    try {
+      const res = await api.get(`/reviews/destination/${destination._id}`);
+      const fetchedReviews = res.data.data || [];
+      setReviews(fetchedReviews);
+      // Recalculate average from fetched reviews (if destination doesn't have aggregated)
+      if (fetchedReviews.length > 0) {
+        const total = fetchedReviews.reduce(
+          (sum: number, r: any) => sum + r.rating,
+          0,
+        );
+        const avg = total / fetchedReviews.length;
+        setAvgRating(Math.round(avg * 10) / 10);
+        setReviewsCount(fetchedReviews.length);
+      } else {
+        setAvgRating(destination?.ratingsAverage || 0);
+        setReviewsCount(destination?.ratingsQuantity || 0);
+      }
+    } catch (err) {
+      console.error("Failed to fetch reviews:", err);
+    }
+  };
 
   const calcNights = () => {
     if (!bookingData.checkIn || !bookingData.checkOut) return 0;
@@ -131,7 +175,11 @@ const DestinationDetail = () => {
               <button
                 key={i}
                 onClick={() => setActiveImage(i)}
-                className={`w-14 h-10 overflow-hidden transition-all duration-300 ${i === activeImage ? "ring-2 ring-[#C9922A] scale-105" : "opacity-50 hover:opacity-80"}`}
+                className={`w-14 h-10 overflow-hidden transition-all duration-300 ${
+                  i === activeImage
+                    ? "ring-2 ring-[#C9922A] scale-105"
+                    : "opacity-50 hover:opacity-80"
+                }`}
               >
                 <img src={img} alt="" className="w-full h-full object-cover" />
               </button>
@@ -190,7 +238,7 @@ const DestinationDetail = () => {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-16 py-16">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          {/* Left */}
+          {/* Left Column */}
           <div className="lg:col-span-2 space-y-12">
             {/* About */}
             <motion.div
@@ -277,7 +325,9 @@ const DestinationDetail = () => {
                       key={idx}
                       whileHover={{ scale: 1.02 }}
                       onClick={() => setActiveImage(idx)}
-                      className={`cursor-pointer overflow-hidden ${idx === 0 ? "col-span-2 h-64" : "h-44"} ${activeImage === idx ? "ring-2 ring-[#C9922A]" : ""}`}
+                      className={`cursor-pointer overflow-hidden ${
+                        idx === 0 ? "col-span-2 h-64" : "h-44"
+                      } ${activeImage === idx ? "ring-2 ring-[#C9922A]" : ""}`}
                     >
                       <img
                         src={img}
@@ -289,9 +339,55 @@ const DestinationDetail = () => {
                 </div>
               </motion.div>
             )}
+
+            {/* ✅ Reviews Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mt-8"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-px bg-[#C9922A]" />
+                  <span className="text-[#C9922A] text-[10px] tracking-[0.35em] uppercase font-light">
+                    Traveler Reviews
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StarRating rating={avgRating} size={5} />
+                  <span className="text-[#1a3a5c] text-sm font-light">
+                    ({reviewsCount} {reviewsCount === 1 ? "review" : "reviews"})
+                  </span>
+                </div>
+              </div>
+
+              {user && (
+                <button
+                  onClick={() => setShowReviewForm(!showReviewForm)}
+                  className="mb-5 text-[#C9922A] text-[10px] tracking-[0.2em] uppercase font-light border border-[#C9922A]/30 px-4 py-2 hover:bg-[#C9922A]/5 transition-colors"
+                >
+                  {showReviewForm ? "Cancel" : "Write a Review"}
+                </button>
+              )}
+
+              {showReviewForm && user && (
+                <div className="mb-6">
+                  <ReviewForm
+                    destinationId={destination._id}
+                    onReviewAdded={() => {
+                      fetchReviews();
+                      setShowReviewForm(false);
+                    }}
+                  />
+                </div>
+              )}
+
+              <ReviewList reviews={reviews} onReviewDeleted={fetchReviews} />
+            </motion.div>
           </div>
 
-          {/* Right - Booking Card */}
+          {/* Right Column - Booking Card */}
           <div className="lg:col-span-1">
             <div className="sticky top-24">
               <motion.div
@@ -304,7 +400,6 @@ const DestinationDetail = () => {
                     "polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px))",
                 }}
               >
-                {/* Card Header */}
                 <div className="bg-[#0a1628] px-6 py-5">
                   <div className="flex items-center gap-3 mb-1">
                     <div className="w-5 h-px bg-[#C9922A]" />

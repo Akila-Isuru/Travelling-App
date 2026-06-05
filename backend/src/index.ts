@@ -5,6 +5,7 @@ import cors from "cors";
 import authRouter from "./routers/authRouter";
 import destinationRouter from "./routers/destinationRouter";
 import bookingRouter from "./routers/bookingRouter";
+import reviewRouter from "./routers/reviewRouter";
 import passport from "passport";
 import "./config/passport";
 
@@ -22,6 +23,7 @@ app.use(passport.initialize());
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/destinations", destinationRouter);
 app.use("/api/v1/bookings", bookingRouter);
+app.use("/api/v1/reviews", reviewRouter);
 
 mongoose
   .connect(DB_URL)
