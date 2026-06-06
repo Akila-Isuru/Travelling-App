@@ -5,6 +5,7 @@ import {
   getDestinationBySlug,
   updateDestination,
   deleteDestination,
+  getNearbyDestinations,
 } from "../controllers/destinationController";
 import { authenticate, requireRole } from "../middleware/auth";
 import { upload } from "../middleware/upload";
@@ -30,5 +31,6 @@ router.put(
 router.delete("/:id", authenticate, requireRole(["ADMIN"]), deleteDestination);
 router.get("/", getAllDestinations);
 router.get("/slug/:slug", getDestinationBySlug);
+router.get("/nearby", getNearbyDestinations);
 
 export default router;

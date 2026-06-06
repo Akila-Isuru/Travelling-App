@@ -23,3 +23,13 @@ export const getDestinationBySlug = async (slug: string) => {
   const res = await api.get(`/destinations/slug/${slug}`);
   return res.data;
 };
+export const getNearbyDestinations = async (
+  lng: number,
+  lat: number,
+  radius: number = 30,
+) => {
+  const res = await api.get(
+    `/destinations/nearby?lng=${lng}&lat=${lat}&radius=${radius}`,
+  );
+  return res.data;
+};

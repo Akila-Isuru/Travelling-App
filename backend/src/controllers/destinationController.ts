@@ -4,12 +4,31 @@ import cloudinary from "../config/cloudinary";
 import { AuthRequest } from "../middleware/auth";
 
 export const createDestination = async (req: Request, res: Response) => {
-  const { name, slug, description, location, category, pricePerNight } =
-    req.body;
+  const {
+    name,
+    slug,
+    description,
+    location,
+    category,
+    pricePerNight,
+    coordinates,
+  } = req.body;
 
   try {
-    const files = req.files as Express.Multer.File[];
+    
+    let parsedCoordinates;
+    if (coordinates) {
+      try {
+        parsedCoordinates =
+          typeof coordinates === "string"
+            ? JSON.parse(coordinates)
+            : coordinates;
+      } catch (e) {
+        return res.status(400).json({ message: "Invalid coordinates format" });
+      }
+    }
 
+    const files = req.files as Express.Multer.File[];
     const imageUrls: string[] = [];
     for (const file of files) {
       const b64 = Buffer.from(file.buffer).toString("base64");
@@ -28,11 +47,13 @@ export const createDestination = async (req: Request, res: Response) => {
       category,
       pricePerNight,
       images: imageUrls,
+      coordinates: parsedCoordinates, 
     });
 
     const savedDest = await newDest.save();
     res.status(201).json({ message: "Success!", data: savedDest });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Error uploading images!" });
   }
 };
@@ -74,8 +95,15 @@ export const getDestinationBySlug = async (req: Request, res: Response) => {
 
 export const updateDestination = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const { name, slug, description, location, category, pricePerNight } =
-    req.body;
+  const {
+    name,
+    slug,
+    description,
+    location,
+    category,
+    pricePerNight,
+    coordinates,
+  } = req.body;
 
   try {
     const destination = await DestinationModel.findById(id);
@@ -89,6 +117,21 @@ export const updateDestination = async (req: AuthRequest, res: Response) => {
     if (location) destination.location = location;
     if (category) destination.category = category;
     if (pricePerNight) destination.pricePerNight = pricePerNight;
+
+    
+    if (coordinates) {
+      try {
+        const parsed =
+          typeof coordinates === "string"
+            ? JSON.parse(coordinates)
+            : coordinates;
+        if (parsed?.coordinates) {
+          destination.coordinates = parsed;
+        }
+      } catch (e) {
+        return res.status(400).json({ message: "Invalid coordinates format" });
+      }
+    }
 
     const files = req.files as Express.Multer.File[];
     if (files && files.length > 0) {
@@ -128,5 +171,49 @@ export const deleteDestination = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to delete destination" });
+  }
+};
+
+export const getNearbyDestinations = async (req: Request, res: Response) => {
+  try {
+    const { lng, lat, radius = 20 } = req.query;
+    const longitude = parseFloat(lng as string);
+    const latitude = parseFloat(lat as string);
+
+    if (isNaN(longitude) || isNaN(latitude)) {
+      return res.status(400).json({ message: "Invalid coordinates" });
+    }
+
+    const radiusInMeters = parseFloat(radius as string) * 1000;
+
+    const nearby = await DestinationModel.aggregate([
+      {
+        $geoNear: {
+          near: { type: "Point", coordinates: [longitude, latitude] },
+          distanceField: "distance",
+          maxDistance: radiusInMeters,
+          spherical: true,
+          key: "coordinates",
+        },
+      },
+      {
+        $project: {
+          name: 1,
+          slug: 1,
+          images: 1,
+          location: 1,
+          category: 1,
+          pricePerNight: 1,
+          ratingsAverage: 1,
+          distance: { $divide: ["$distance", 1000] },
+          coordinates: 1,
+        },
+      },
+    ]);
+
+    res.status(200).json({ success: true, data: nearby });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch nearby destinations" });
   }
 };

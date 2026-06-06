@@ -11,14 +11,26 @@ import { type Destination } from "../types";
 import { useAuth } from "../hooks/useAuth";
 import api from "../api/axiosInspector";
 import { initiatePayment } from "../services/paymentService";
+import DestinationMap from "../components/DestinationMap";
+import { getNearbyDestinations } from "../services/destinationService";
+
+type DestinationWithCoords = Destination & {
+  coordinates?: {
+    coordinates: [number, number];
+  };
+};
 
 const DestinationDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [destination, setDestination] = useState<Destination | null>(null);
+  const [destination, setDestination] = useState<DestinationWithCoords | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
+  const [nearbyDestinations, setNearbyDestinations] = useState<any[]>([]);
+  const [loadingNearby, setLoadingNearby] = useState(false);
 
   const [bookingData, setBookingData] = useState({
     checkIn: "",
@@ -33,6 +45,32 @@ const DestinationDetail = () => {
   const [avgRating, setAvgRating] = useState(0);
   const [reviewsCount, setReviewsCount] = useState(0);
   const [showReviewForm, setShowReviewForm] = useState(false);
+
+  useEffect(() => {
+    if (destination?.coordinates?.coordinates) {
+      fetchNearby();
+    }
+  }, [destination]);
+
+  const fetchNearby = async () => {
+    if (!destination?.coordinates?.coordinates) return;
+    const [lng, lat] = destination.coordinates.coordinates;
+    setLoadingNearby(true);
+    try {
+      const res = await api.get(
+        `/destinations/nearby?lng=${lng}&lat=${lat}&radius=30`,
+      );
+      // filter out current destination
+      const filtered = res.data.data.filter(
+        (d: any) => d._id !== destination._id,
+      );
+      setNearbyDestinations(filtered);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingNearby(false);
+    }
+  };
 
   useEffect(() => {
     const fetchDestination = async () => {
@@ -588,6 +626,81 @@ const DestinationDetail = () => {
           </div>
         </div>
       </div>
+      {/* Map Section */}
+      {destination?.coordinates?.coordinates && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mt-12"
+        >
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-8 h-px bg-[#C9922A]" />
+            <span className="text-[#C9922A] text-[10px] tracking-[0.35em] uppercase font-light">
+              Explore Nearby
+            </span>
+          </div>
+          <DestinationMap
+            currentDest={destination}
+            nearbyDests={nearbyDestinations}
+          />
+        </motion.div>
+      )}
+
+      {/* Nearby Destinations Cards */}
+      {nearbyDestinations.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mt-12"
+        >
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-8 h-px bg-[#C9922A]" />
+            <span className="text-[#C9922A] text-[10px] tracking-[0.35em] uppercase font-light">
+              You Might Also Like
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {nearbyDestinations.map((dest) => (
+              <div
+                key={dest._id}
+                className="bg-white border border-gray-100 p-4 group hover:border-[#C9922A]/30 transition-all"
+                style={{
+                  clipPath:
+                    "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))",
+                }}
+              >
+                <img
+                  src={dest.images?.[0] || ""}
+                  alt={dest.name}
+                  className="w-full h-32 object-cover mb-3"
+                />
+                <h4 className="text-[#1a3a5c] font-light text-md">
+                  {dest.name}
+                </h4>
+                <p className="text-gray-400 text-xs">{dest.location}</p>
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-[#C9922A] text-sm">
+                    ${dest.pricePerNight}/night
+                  </span>
+                  <a
+                    href={`/destination/${dest.slug}`}
+                    className="text-[10px] tracking-widest uppercase text-[#1a3a5c] hover:text-[#C9922A]"
+                  >
+                    Explore →
+                  </a>
+                </div>
+                {dest.distance && (
+                  <p className="text-gray-300 text-[10px] mt-1">
+                    {dest.distance.toFixed(1)} km away
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
       <Footer />
     </div>
   );

@@ -8,6 +8,34 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import StarRating from "../components/StarRating";
 import { useAuth } from "../hooks/useAuth";
 import api from "../api/axiosInspector";
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+});
+
+
+function MapClickHandler({
+  setCoordinates,
+}: {
+  setCoordinates: (coords: [number, number]) => void;
+}) {
+  useMapEvents({
+    click(e) {
+      setCoordinates([e.latlng.lng, e.latlng.lat]);
+    },
+  });
+  return null;
+}
 
 interface Booking {
   _id: string;
@@ -30,6 +58,10 @@ interface Destination {
   pricePerNight: number;
   images: string[];
   description: string;
+  coordinates?: {
+    type: string;
+    coordinates: [number, number];
+  };
 }
 
 interface User {
@@ -67,7 +99,7 @@ const AdminDashboard = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Destination form state
+ 
   const [showDestForm, setShowDestForm] = useState(false);
   const [editingDest, setEditingDest] = useState<Destination | null>(null);
   const [destForm, setDestForm] = useState({
@@ -82,12 +114,14 @@ const AdminDashboard = () => {
   const [destLoading, setDestLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Status update loading
+  
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
-  // User role update loading
+ 
   const [roleUpdating, setRoleUpdating] = useState<string | null>(null);
-  // Delete loading
+  
   const [deletingId, setDeletingId] = useState<string | null>(null);
+ 
+  const [coordinates, setCoordinates] = useState<[number, number] | null>(null);
 
   useEffect(() => {
     fetchAll();
@@ -113,7 +147,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // ========== DESTINATION CRUD ==========
+
   const openAddDest = () => {
     setEditingDest(null);
     setDestForm({
@@ -125,6 +159,7 @@ const AdminDashboard = () => {
       pricePerNight: "",
     });
     setDestImages([]);
+    setCoordinates(null);
     setShowDestForm(true);
   };
 
@@ -139,6 +174,11 @@ const AdminDashboard = () => {
       pricePerNight: String(dest.pricePerNight),
     });
     setDestImages([]);
+    if (dest.coordinates?.coordinates) {
+      setCoordinates(dest.coordinates.coordinates);
+    } else {
+      setCoordinates(null);
+    }
     setShowDestForm(true);
   };
 
@@ -153,11 +193,17 @@ const AdminDashboard = () => {
       alert("Please fill all required fields.");
       return;
     }
+    if (!coordinates) {
+      alert("Please select location on map.");
+      return;
+    }
     setDestLoading(true);
     try {
       const fd = new FormData();
       Object.entries(destForm).forEach(([k, v]) => fd.append(k, v));
       destImages.forEach((f) => fd.append("images", f));
+     
+      fd.append("coordinates", JSON.stringify({ type: "Point", coordinates }));
 
       if (editingDest) {
         const res = await api.put(`/destinations/${editingDest._id}`, fd, {
@@ -173,6 +219,7 @@ const AdminDashboard = () => {
         setDestinations((prev) => [...prev, res.data.data]);
       }
       setShowDestForm(false);
+      setCoordinates(null);
     } catch (err: any) {
       alert(err?.response?.data?.message || "Operation failed.");
     } finally {
@@ -193,7 +240,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // ========== BOOKING STATUS UPDATE ==========
+ 
   const handleStatusUpdate = async (id: string, status: string) => {
     setStatusUpdating(id);
     try {
@@ -208,7 +255,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // ========== USER MANAGEMENT ==========
+ 
   const handleRoleUpdate = async (userId: string, roles: string[]) => {
     setRoleUpdating(userId);
     try {
@@ -245,7 +292,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // ========== REVIEW MANAGEMENT ==========
+  
   const handleDeleteReview = async (reviewId: string) => {
     if (!confirm("Delete this review?")) return;
     setDeletingId(reviewId);
@@ -284,7 +331,7 @@ const AdminDashboard = () => {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap');`}</style>
       <Navbar />
 
-      {/* Header */}
+      
       <div className="bg-[#0a1628] pt-28 pb-14 relative overflow-hidden">
         <div
           className="absolute inset-0 opacity-[0.04]"
@@ -323,7 +370,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Stats */}
+        
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-8">
             {[
               { label: "Total Bookings", value: stats.totalBookings },
@@ -359,7 +406,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Tab Nav - updated with Users and Reviews */}
+      
       <div className="border-b border-gray-200 bg-white sticky top-[70px] z-20 overflow-x-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex">
           {(
@@ -391,11 +438,11 @@ const AdminDashboard = () => {
           <LoadingSpinner />
         ) : (
           <>
-            {/* OVERVIEW */}
+            
             {activeTab === "overview" && (
               <div className="space-y-8">
                 <div className="grid md:grid-cols-2 gap-6">
-                  {/* Recent Bookings */}
+               
                   <div
                     className="bg-white border border-gray-100 p-6"
                     style={{
@@ -448,7 +495,7 @@ const AdminDashboard = () => {
                       ))}
                     </div>
                   </div>
-                  {/* Quick Stats */}
+                
                   <div
                     className="bg-white border border-gray-100 p-6"
                     style={{
@@ -482,7 +529,7 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            {/* BOOKINGS - same as before */}
+            
             {activeTab === "bookings" && (
               <div className="space-y-4">
                 {bookings.length === 0 ? (
@@ -598,7 +645,7 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            {/* DESTINATIONS - same as before with edit/delete */}
+            {/* DESTINATIONS */}
             {activeTab === "destinations" && (
               <div>
                 <div className="flex items-center justify-between mb-6">
@@ -837,7 +884,7 @@ const AdminDashboard = () => {
         )}
       </div>
 
-      {/* Destination Form Modal (same as before) */}
+      {/* Destination Form Modal with Map Picker */}
       <AnimatePresence>
         {showDestForm && (
           <motion.div
@@ -956,6 +1003,39 @@ const AdminDashboard = () => {
                       : "Click to upload images"}
                   </button>
                 </div>
+
+                {/* MAP PICKER SECTION */}
+                <div>
+                  <label className="block text-[10px] tracking-[0.2em] uppercase text-gray-400 font-light mb-1.5">
+                    Location on Map (click to set)
+                  </label>
+                  <div style={{ height: "250px", width: "100%" }}>
+                    <MapContainer
+                      center={
+                        coordinates
+                          ? [coordinates[1], coordinates[0]]
+                          : [7.8731, 80.7718]
+                      }
+                      zoom={7}
+                      style={{ height: "100%", width: "100%" }}
+                    >
+                      <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+                      <MapClickHandler setCoordinates={setCoordinates} />
+                      {coordinates && (
+                        <Marker position={[coordinates[1], coordinates[0]]}>
+                          {/* empty popup to avoid distraction */}
+                        </Marker>
+                      )}
+                    </MapContainer>
+                  </div>
+                  {coordinates && (
+                    <p className="text-gray-400 text-[10px] mt-1">
+                      Lat: {coordinates[1].toFixed(6)}, Lng:{" "}
+                      {coordinates[0].toFixed(6)}
+                    </p>
+                  )}
+                </div>
+
                 <div className="flex gap-3 pt-2">
                   <button
                     onClick={() => setShowDestForm(false)}
