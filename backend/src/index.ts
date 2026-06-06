@@ -6,12 +6,14 @@ import authRouter from "./routers/authRouter";
 import destinationRouter from "./routers/destinationRouter";
 import bookingRouter from "./routers/bookingRouter";
 import reviewRouter from "./routers/reviewRouter";
+import paymentRouter from "./routers/paymentRouter";
 import passport from "passport";
 import "./config/passport";
 
-dotenv.config();
+dotenv.config();  
 
 const app = express();
+app.use(express.urlencoded({ extended: true }));
 
 const PORT = process.env.PORT;
 const DB_URL = process.env.DB_URL as string;
@@ -24,6 +26,7 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/destinations", destinationRouter);
 app.use("/api/v1/bookings", bookingRouter);
 app.use("/api/v1/reviews", reviewRouter);
+app.use("/api/v1/payment", paymentRouter);
 
 mongoose
   .connect(DB_URL)

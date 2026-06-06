@@ -11,6 +11,12 @@ export interface IBooking extends Document {
   status: "pending" | "confirmed" | "cancelled";
   specialRequests?: string;
   createdAt: Date;
+
+  
+  paymentStatus: "pending" | "paid" | "failed";
+  paymentId: string;
+  paymentMethod: string;
+  paymentAmount: number;
 }
 
 const bookingSchema = new Schema<IBooking>(
@@ -52,11 +58,29 @@ const bookingSchema = new Schema<IBooking>(
       type: String,
       default: "",
     },
+    
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "failed"],
+      default: "pending",
+    },
+    paymentId: {
+      type: String,
+      default: "",
+    },
+    paymentMethod: {
+      type: String,
+      default: "",
+    },
+    paymentAmount: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
   },
 );
 
-const BookinModel = model<IBooking>("BookingModel", bookingSchema);
-export default BookinModel;
+const BookingModel = model<IBooking>("BookingModel", bookingSchema);
+export default BookingModel;

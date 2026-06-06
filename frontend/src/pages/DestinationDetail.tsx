@@ -10,6 +10,7 @@ import ReviewList from "../components/ReviewList";
 import { type Destination } from "../types";
 import { useAuth } from "../hooks/useAuth";
 import api from "../api/axiosInspector";
+import { initiatePayment } from "../services/paymentService";
 
 const DestinationDetail = () => {
   const { slug } = useParams();
@@ -26,7 +27,6 @@ const DestinationDetail = () => {
     specialRequests: "",
   });
   const [bookingLoading, setBookingLoading] = useState(false);
-  const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingError, setBookingError] = useState("");
 
   const [reviews, setReviews] = useState<any[]>([]);
@@ -40,7 +40,6 @@ const DestinationDetail = () => {
         const res = await api.get(`/destinations/slug/${slug}`);
         const dest = res.data.data;
         setDestination(dest);
-
         if (dest.ratingsAverage) {
           setAvgRating(dest.ratingsAverage);
           setReviewsCount(dest.ratingsQuantity || 0);
@@ -66,7 +65,6 @@ const DestinationDetail = () => {
       const res = await api.get(`/reviews/destination/${destination._id}`);
       const fetchedReviews = res.data.data || [];
       setReviews(fetchedReviews);
-      // Recalculate average from fetched reviews (if destination doesn't have aggregated)
       if (fetchedReviews.length > 0) {
         const total = fetchedReviews.reduce(
           (sum: number, r: any) => sum + r.rating,
@@ -106,23 +104,55 @@ const DestinationDetail = () => {
       setBookingError("Check-out must be after check-in.");
       return;
     }
+
+    if (!(window as any).payhere) {
+      setBookingError(
+        "Payment gateway not loaded. Please refresh and try again.",
+      );
+      return;
+    }
+
     setBookingError("");
     setBookingLoading(true);
+
     try {
-      await api.post("/bookings", {
+      const bookingRes = await api.post("/bookings", {
         destination: destination?._id,
         checkIn: bookingData.checkIn,
         checkOut: bookingData.checkOut,
         guests: bookingData.guests,
         totalPrice: totalPrice(),
         specialRequests: bookingData.specialRequests,
+        paymentAmount: totalPrice(),
       });
-      setBookingSuccess(true);
+      const bookingId = bookingRes.data.data._id;
+
+      const paymentData = await initiatePayment(bookingId);
+      console.log("Payment Data:", paymentData);
+
+      const payhere = (window as any).payhere;
+
+      payhere.onCompleted = function (orderId: string) {
+        console.log("Payment completed:", orderId);
+        navigate("/dashboard");
+      };
+      payhere.onDismissed = function () {
+        console.log("Payment dismissed");
+        setBookingError("Payment was cancelled.");
+        setBookingLoading(false);
+      };
+      payhere.onError = function (error: string) {
+        console.log("Payment error:", error);
+        setBookingError("Payment error occurred. Please try again.");
+        setBookingLoading(false);
+      };
+
+      payhere.startPayment(paymentData);
     } catch (err: any) {
+      console.error(err);
       setBookingError(
         err?.response?.data?.message || "Booking failed. Please try again.",
       );
-    } finally {
       setBookingLoading(false);
     }
   };
@@ -148,7 +178,7 @@ const DestinationDetail = () => {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap');`}</style>
       <Navbar />
 
-      {/* Hero */}
+      {/* Hero section */}
       <div className="relative h-[70vh] min-h-[500px] overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.img
@@ -164,11 +194,8 @@ const DestinationDetail = () => {
         </AnimatePresence>
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628] via-[#0a1628]/30 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0a1628]/60 via-transparent to-transparent" />
-
-        {/* Top accent */}
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#C9922A] to-transparent" />
 
-        {/* Thumbnails */}
         {destination.images.length > 1 && (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
             {destination.images.map((img, i) => (
@@ -187,7 +214,6 @@ const DestinationDetail = () => {
           </div>
         )}
 
-        {/* Title */}
         <div className="absolute bottom-20 left-0 right-0 px-6 md:px-16 z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -240,7 +266,6 @@ const DestinationDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-12">
-            {/* About */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -267,7 +292,6 @@ const DestinationDetail = () => {
               </p>
             </motion.div>
 
-            {/* Details */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -306,7 +330,6 @@ const DestinationDetail = () => {
               ))}
             </motion.div>
 
-            {/* Gallery */}
             {destination.images.length > 1 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -325,9 +348,7 @@ const DestinationDetail = () => {
                       key={idx}
                       whileHover={{ scale: 1.02 }}
                       onClick={() => setActiveImage(idx)}
-                      className={`cursor-pointer overflow-hidden ${
-                        idx === 0 ? "col-span-2 h-64" : "h-44"
-                      } ${activeImage === idx ? "ring-2 ring-[#C9922A]" : ""}`}
+                      className={`cursor-pointer overflow-hidden ${idx === 0 ? "col-span-2 h-64" : "h-44"} ${activeImage === idx ? "ring-2 ring-[#C9922A]" : ""}`}
                     >
                       <img
                         src={img}
@@ -340,7 +361,7 @@ const DestinationDetail = () => {
               </motion.div>
             )}
 
-            {/* ✅ Reviews Section */}
+            {/* Reviews Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -361,7 +382,6 @@ const DestinationDetail = () => {
                   </span>
                 </div>
               </div>
-
               {user && (
                 <button
                   onClick={() => setShowReviewForm(!showReviewForm)}
@@ -370,7 +390,6 @@ const DestinationDetail = () => {
                   {showReviewForm ? "Cancel" : "Write a Review"}
                 </button>
               )}
-
               {showReviewForm && user && (
                 <div className="mb-6">
                   <ReviewForm
@@ -382,7 +401,6 @@ const DestinationDetail = () => {
                   />
                 </div>
               )}
-
               <ReviewList reviews={reviews} onReviewDeleted={fetchReviews} />
             </motion.div>
           </div>
@@ -432,200 +450,144 @@ const DestinationDetail = () => {
                     </span>
                   </p>
                 </div>
-
                 <div className="px-6 py-6 space-y-4">
-                  {bookingSuccess ? (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="text-center py-6"
+                  <div>
+                    <label className="block text-[10px] tracking-[0.2em] uppercase text-gray-400 font-light mb-1.5">
+                      Check-In
+                    </label>
+                    <input
+                      type="date"
+                      value={bookingData.checkIn}
+                      min={new Date().toISOString().split("T")[0]}
+                      onChange={(e) =>
+                        setBookingData({
+                          ...bookingData,
+                          checkIn: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2.5 border border-gray-200 bg-[#faf8f4] text-[#1a3a5c] text-sm font-light focus:outline-none focus:border-[#C9922A] transition-colors"
+                      style={{ borderRadius: 0 }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] tracking-[0.2em] uppercase text-gray-400 font-light mb-1.5">
+                      Check-Out
+                    </label>
+                    <input
+                      type="date"
+                      value={bookingData.checkOut}
+                      min={
+                        bookingData.checkIn ||
+                        new Date().toISOString().split("T")[0]
+                      }
+                      onChange={(e) =>
+                        setBookingData({
+                          ...bookingData,
+                          checkOut: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2.5 border border-gray-200 bg-[#faf8f4] text-[#1a3a5c] text-sm font-light focus:outline-none focus:border-[#C9922A] transition-colors"
+                      style={{ borderRadius: 0 }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] tracking-[0.2em] uppercase text-gray-400 font-light mb-1.5">
+                      Guests
+                    </label>
+                    <select
+                      value={bookingData.guests}
+                      onChange={(e) =>
+                        setBookingData({
+                          ...bookingData,
+                          guests: Number(e.target.value),
+                        })
+                      }
+                      className="w-full px-3 py-2.5 border border-gray-200 bg-[#faf8f4] text-[#1a3a5c] text-sm font-light focus:outline-none focus:border-[#C9922A] transition-colors"
+                      style={{ borderRadius: 0 }}
                     >
-                      <div className="w-12 h-12 border border-[#C9922A] flex items-center justify-center mx-auto mb-4">
-                        <svg
-                          className="w-5 h-5 text-[#C9922A]"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                        <option key={n} value={n}>
+                          {n} Guest{n > 1 ? "s" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] tracking-[0.2em] uppercase text-gray-400 font-light mb-1.5">
+                      Special Requests
+                    </label>
+                    <textarea
+                      value={bookingData.specialRequests}
+                      onChange={(e) =>
+                        setBookingData({
+                          ...bookingData,
+                          specialRequests: e.target.value,
+                        })
+                      }
+                      rows={2}
+                      placeholder="Any special requirements..."
+                      className="w-full px-3 py-2.5 border border-gray-200 bg-[#faf8f4] text-[#1a3a5c] text-sm font-light focus:outline-none focus:border-[#C9922A] transition-colors resize-none"
+                      style={{ borderRadius: 0 }}
+                    />
+                  </div>
+                  {calcNights() > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="border-t border-gray-100 pt-4 space-y-2"
+                    >
+                      <div className="flex justify-between text-xs font-light text-gray-400">
+                        <span>
+                          ${destination.pricePerNight} × {calcNights()} nights ×{" "}
+                          {bookingData.guests} guest
+                          {bookingData.guests > 1 ? "s" : ""}
+                        </span>
+                        <span>${totalPrice()}</span>
                       </div>
-                      <p
-                        className="text-[#1a3a5c] font-light"
-                        style={{
-                          fontFamily: "'Cormorant Garamond', Georgia, serif",
-                          fontSize: "1.2rem",
-                          fontStyle: "italic",
-                        }}
-                      >
-                        Booking Confirmed!
-                      </p>
-                      <p className="text-gray-400 text-xs mt-2 font-light">
-                        Your reservation is pending confirmation.
-                      </p>
-                      <button
-                        onClick={() => navigate("/dashboard")}
-                        className="mt-5 w-full py-3 bg-[#1a3a5c] text-white text-[11px] tracking-[0.2em] uppercase font-light hover:bg-[#C9922A] transition-colors duration-300"
-                        style={{
-                          clipPath:
-                            "polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))",
-                        }}
-                      >
-                        View My Bookings
-                      </button>
+                      <div className="flex justify-between text-sm font-light">
+                        <span className="text-[#1a3a5c] tracking-wide uppercase text-[10px]">
+                          Total
+                        </span>
+                        <span
+                          className="text-[#C9922A]"
+                          style={{
+                            fontFamily: "'Cormorant Garamond', Georgia, serif",
+                            fontSize: "1.1rem",
+                          }}
+                        >
+                          ${totalPrice()}
+                        </span>
+                      </div>
                     </motion.div>
-                  ) : (
-                    <>
-                      <div>
-                        <label className="block text-[10px] tracking-[0.2em] uppercase text-gray-400 font-light mb-1.5">
-                          Check-In
-                        </label>
-                        <input
-                          type="date"
-                          value={bookingData.checkIn}
-                          min={new Date().toISOString().split("T")[0]}
-                          onChange={(e) =>
-                            setBookingData({
-                              ...bookingData,
-                              checkIn: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2.5 border border-gray-200 bg-[#faf8f4] text-[#1a3a5c] text-sm font-light focus:outline-none focus:border-[#C9922A] transition-colors"
-                          style={{ borderRadius: 0 }}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] tracking-[0.2em] uppercase text-gray-400 font-light mb-1.5">
-                          Check-Out
-                        </label>
-                        <input
-                          type="date"
-                          value={bookingData.checkOut}
-                          min={
-                            bookingData.checkIn ||
-                            new Date().toISOString().split("T")[0]
-                          }
-                          onChange={(e) =>
-                            setBookingData({
-                              ...bookingData,
-                              checkOut: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2.5 border border-gray-200 bg-[#faf8f4] text-[#1a3a5c] text-sm font-light focus:outline-none focus:border-[#C9922A] transition-colors"
-                          style={{ borderRadius: 0 }}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] tracking-[0.2em] uppercase text-gray-400 font-light mb-1.5">
-                          Guests
-                        </label>
-                        <select
-                          value={bookingData.guests}
-                          onChange={(e) =>
-                            setBookingData({
-                              ...bookingData,
-                              guests: Number(e.target.value),
-                            })
-                          }
-                          className="w-full px-3 py-2.5 border border-gray-200 bg-[#faf8f4] text-[#1a3a5c] text-sm font-light focus:outline-none focus:border-[#C9922A] transition-colors"
-                          style={{ borderRadius: 0 }}
-                        >
-                          {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                            <option key={n} value={n}>
-                              {n} Guest{n > 1 ? "s" : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] tracking-[0.2em] uppercase text-gray-400 font-light mb-1.5">
-                          Special Requests
-                        </label>
-                        <textarea
-                          value={bookingData.specialRequests}
-                          onChange={(e) =>
-                            setBookingData({
-                              ...bookingData,
-                              specialRequests: e.target.value,
-                            })
-                          }
-                          rows={2}
-                          placeholder="Any special requirements..."
-                          className="w-full px-3 py-2.5 border border-gray-200 bg-[#faf8f4] text-[#1a3a5c] text-sm font-light focus:outline-none focus:border-[#C9922A] transition-colors resize-none"
-                          style={{ borderRadius: 0 }}
-                        />
-                      </div>
-
-                      {/* Price Summary */}
-                      {calcNights() > 0 && (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="border-t border-gray-100 pt-4 space-y-2"
-                        >
-                          <div className="flex justify-between text-xs font-light text-gray-400">
-                            <span>
-                              ${destination.pricePerNight} × {calcNights()}{" "}
-                              nights × {bookingData.guests} guest
-                              {bookingData.guests > 1 ? "s" : ""}
-                            </span>
-                            <span>${totalPrice()}</span>
-                          </div>
-                          <div className="flex justify-between text-sm font-light">
-                            <span className="text-[#1a3a5c] tracking-wide uppercase text-[10px]">
-                              Total
-                            </span>
-                            <span
-                              className="text-[#C9922A]"
-                              style={{
-                                fontFamily:
-                                  "'Cormorant Garamond', Georgia, serif",
-                                fontSize: "1.1rem",
-                              }}
-                            >
-                              ${totalPrice()}
-                            </span>
-                          </div>
-                        </motion.div>
-                      )}
-
-                      {bookingError && (
-                        <p className="text-red-400 text-xs font-light">
-                          {bookingError}
-                        </p>
-                      )}
-
-                      <button
-                        onClick={handleBooking}
-                        disabled={bookingLoading}
-                        className="w-full py-3.5 bg-[#C9922A] text-white text-[11px] tracking-[0.25em] uppercase font-light hover:bg-[#b07d20] transition-colors duration-300 disabled:opacity-50"
-                        style={{
-                          clipPath:
-                            "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))",
-                        }}
-                      >
-                        {bookingLoading ? "Processing..." : "Reserve Now"}
-                      </button>
-                      <button
-                        onClick={() => navigate("/dashboard")}
-                        className="w-full py-2.5 border border-[#1a3a5c]/20 text-[#1a3a5c] text-[11px] tracking-[0.2em] uppercase font-light hover:border-[#C9922A] hover:text-[#C9922A] transition-colors duration-300"
-                      >
-                        View My Bookings
-                      </button>
-                    </>
                   )}
+                  {bookingError && (
+                    <p className="text-red-400 text-xs font-light">
+                      {bookingError}
+                    </p>
+                  )}
+                  <button
+                    onClick={handleBooking}
+                    disabled={bookingLoading}
+                    className="w-full py-3.5 bg-[#C9922A] text-white text-[11px] tracking-[0.25em] uppercase font-light hover:bg-[#b07d20] transition-colors duration-300 disabled:opacity-50"
+                    style={{
+                      clipPath:
+                        "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))",
+                    }}
+                  >
+                    {bookingLoading ? "Processing..." : "Reserve Now"}
+                  </button>
+                  <button
+                    onClick={() => navigate("/dashboard")}
+                    className="w-full py-2.5 border border-[#1a3a5c]/20 text-[#1a3a5c] text-[11px] tracking-[0.2em] uppercase font-light hover:border-[#C9922A] hover:text-[#C9922A] transition-colors duration-300"
+                  >
+                    View My Bookings
+                  </button>
                 </div>
               </motion.div>
             </div>
           </div>
         </div>
       </div>
-
       <Footer />
     </div>
   );
