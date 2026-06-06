@@ -7,10 +7,11 @@ import destinationRouter from "./routers/destinationRouter";
 import bookingRouter from "./routers/bookingRouter";
 import reviewRouter from "./routers/reviewRouter";
 import paymentRouter from "./routers/paymentRouter";
+import adminRouter from "./routers/adminRouter";
 import passport from "passport";
 import "./config/passport";
 
-dotenv.config();  
+dotenv.config();
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
@@ -27,6 +28,7 @@ app.use("/api/v1/destinations", destinationRouter);
 app.use("/api/v1/bookings", bookingRouter);
 app.use("/api/v1/reviews", reviewRouter);
 app.use("/api/v1/payment", paymentRouter);
+app.use("/api/v1/admin", adminRouter);
 
 mongoose
   .connect(DB_URL)
