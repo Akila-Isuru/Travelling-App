@@ -12,7 +12,6 @@ import { useAuth } from "../hooks/useAuth";
 import api from "../api/axiosInspector";
 import { initiatePayment } from "../services/paymentService";
 import DestinationMap from "../components/DestinationMap";
-import { getNearbyDestinations } from "../services/destinationService";
 
 type DestinationWithCoords = Destination & {
   coordinates?: {
@@ -31,6 +30,7 @@ const DestinationDetail = () => {
   const [activeImage, setActiveImage] = useState(0);
   const [nearbyDestinations, setNearbyDestinations] = useState<any[]>([]);
   const [loadingNearby, setLoadingNearby] = useState(false);
+  const [travelTimes, setTravelTimes] = useState<Record<string, string>>({});
 
   const [bookingData, setBookingData] = useState({
     checkIn: "",
@@ -40,7 +40,6 @@ const DestinationDetail = () => {
   });
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState("");
-
   const [reviews, setReviews] = useState<any[]>([]);
   const [avgRating, setAvgRating] = useState(0);
   const [reviewsCount, setReviewsCount] = useState(0);
@@ -50,7 +49,7 @@ const DestinationDetail = () => {
     if (destination?.coordinates?.coordinates) {
       fetchNearby();
     }
-  }, [destination]);
+  }, [destination?._id]);
 
   const fetchNearby = async () => {
     if (!destination?.coordinates?.coordinates) return;
@@ -60,11 +59,44 @@ const DestinationDetail = () => {
       const res = await api.get(
         `/destinations/nearby?lng=${lng}&lat=${lat}&radius=30`,
       );
-      // filter out current destination
       const filtered = res.data.data.filter(
         (d: any) => d._id !== destination._id,
       );
       setNearbyDestinations(filtered);
+
+      const times: Record<string, string> = {};
+      await Promise.all(
+        filtered.map(async (dest: any) => {
+          if (!dest?.coordinates?.coordinates) return;
+          const [destLng, destLat] = dest.coordinates.coordinates;
+          try {
+            const response = await api.get("/travel/travel-time", {
+              params: {
+                startLng: lng,
+                startLat: lat,
+                endLng: destLng,
+                endLat: destLat,
+              },
+            });
+            const durationSec = response.data.duration;
+          
+            console.log("Travel time for", dest.name, ":", durationSec);
+            if (durationSec) {
+              const hours = Math.floor(durationSec / 3600);
+              const minutes = Math.floor((durationSec % 3600) / 60);
+              times[dest._id] =
+                hours > 0 ? `${hours}h ${minutes}min` : `${minutes}min`;
+            }
+          } catch (err) {
+            console.error("Travel time fetch failed for", dest.name, err);
+          }
+        }),
+      );
+      
+      setTravelTimes({ ...times });
+      console.log("Final travelTimes:", times);
+
+      setTravelTimes({ ...times });
     } catch (err) {
       console.error(err);
     } finally {
@@ -142,17 +174,14 @@ const DestinationDetail = () => {
       setBookingError("Check-out must be after check-in.");
       return;
     }
-
     if (!(window as any).payhere) {
       setBookingError(
         "Payment gateway not loaded. Please refresh and try again.",
       );
       return;
     }
-
     setBookingError("");
     setBookingLoading(true);
-
     try {
       const bookingRes = await api.post("/bookings", {
         destination: destination?._id,
@@ -164,27 +193,19 @@ const DestinationDetail = () => {
         paymentAmount: totalPrice(),
       });
       const bookingId = bookingRes.data.data._id;
-
       const paymentData = await initiatePayment(bookingId);
-      console.log("Payment Data:", paymentData);
-
       const payhere = (window as any).payhere;
-
       payhere.onCompleted = function (orderId: string) {
-        console.log("Payment completed:", orderId);
         navigate("/dashboard");
       };
       payhere.onDismissed = function () {
-        console.log("Payment dismissed");
         setBookingError("Payment was cancelled.");
         setBookingLoading(false);
       };
       payhere.onError = function (error: string) {
-        console.log("Payment error:", error);
         setBookingError("Payment error occurred. Please try again.");
         setBookingLoading(false);
       };
-
       payhere.startPayment(paymentData);
     } catch (err: any) {
       console.error(err);
@@ -399,7 +420,7 @@ const DestinationDetail = () => {
               </motion.div>
             )}
 
-            {/* Reviews Section */}
+            
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -443,7 +464,7 @@ const DestinationDetail = () => {
             </motion.div>
           </div>
 
-          {/* Right Column - Booking Card */}
+          
           <div className="lg:col-span-1">
             <div className="sticky top-24">
               <motion.div
@@ -576,7 +597,7 @@ const DestinationDetail = () => {
                     >
                       <div className="flex justify-between text-xs font-light text-gray-400">
                         <span>
-                          ${destination.pricePerNight} × {calcNights()} nights ×{" "}
+                          ${destination.pricePerNight} x {calcNights()} nights x{" "}
                           {bookingData.guests} guest
                           {bookingData.guests > 1 ? "s" : ""}
                         </span>
@@ -626,6 +647,7 @@ const DestinationDetail = () => {
           </div>
         </div>
       </div>
+
       {/* Map Section */}
       {destination?.coordinates?.coordinates && (
         <motion.div
@@ -647,60 +669,109 @@ const DestinationDetail = () => {
         </motion.div>
       )}
 
-      {/* Nearby Destinations Cards */}
+      
       {nearbyDestinations.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-12"
+          className="mt-12 pb-16"
         >
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-8 h-px bg-[#C9922A]" />
-            <span className="text-[#C9922A] text-[10px] tracking-[0.35em] uppercase font-light">
-              You Might Also Like
-            </span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {nearbyDestinations.map((dest) => (
-              <div
-                key={dest._id}
-                className="bg-white border border-gray-100 p-4 group hover:border-[#C9922A]/30 transition-all"
-                style={{
-                  clipPath:
-                    "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))",
-                }}
-              >
-                <img
-                  src={dest.images?.[0] || ""}
-                  alt={dest.name}
-                  className="w-full h-32 object-cover mb-3"
-                />
-                <h4 className="text-[#1a3a5c] font-light text-md">
-                  {dest.name}
-                </h4>
-                <p className="text-gray-400 text-xs">{dest.location}</p>
-                <div className="flex justify-between items-center mt-2">
-                  <span className="text-[#C9922A] text-sm">
-                    ${dest.pricePerNight}/night
-                  </span>
-                  <a
-                    href={`/destination/${dest.slug}`}
-                    className="text-[10px] tracking-widest uppercase text-[#1a3a5c] hover:text-[#C9922A]"
-                  >
-                    Explore →
-                  </a>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-16">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-8 h-px bg-[#C9922A]" />
+              <span className="text-[#C9922A] text-[10px] tracking-[0.35em] uppercase font-light">
+                You Might Also Like
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {nearbyDestinations.map((dest) => (
+                <div
+                  key={dest._id}
+                  className="bg-white border border-gray-100 p-4 group hover:border-[#C9922A]/30 transition-all"
+                  style={{
+                    clipPath:
+                      "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))",
+                  }}
+                >
+                  <img
+                    src={dest.images?.[0] || ""}
+                    alt={dest.name}
+                    className="w-full h-32 object-cover mb-3"
+                  />
+                  <h4 className="text-[#1a3a5c] font-light text-md">
+                    {dest.name}
+                  </h4>
+                  <p className="text-gray-400 text-xs">{dest.location}</p>
+
+                  {/* Distance + Travel time row */}
+                  <div className="flex items-center gap-3 mt-2 mb-2">
+                    {dest.distance && (
+                      <span className="flex items-center gap-1 text-gray-400 text-[11px]">
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0z"
+                          />
+                        </svg>
+                        {dest.distance.toFixed(1)} km
+                      </span>
+                    )}
+                    {travelTimes[dest._id] ? (
+                      <span className="flex items-center gap-1 text-[#C9922A] text-[11px]">
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
+                          />
+                        </svg>
+                        {travelTimes[dest._id]} by car
+                      </span>
+                    ) : (
+                      <span className="text-gray-300 text-[11px]">
+                        Calculating...
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-[#C9922A] text-sm">
+                      ${dest.pricePerNight}/night
+                    </span>
+                   
+                    <a
+                      href={`/destination/${dest.slug}`}
+                      className="text-[10px] tracking-widest uppercase text-[#1a3a5c] hover:text-[#C9922A]"
+                    >
+                      Explore
+                    </a>
+                  </div>
                 </div>
-                {dest.distance && (
-                  <p className="text-gray-300 text-[10px] mt-1">
-                    {dest.distance.toFixed(1)} km away
-                  </p>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </motion.div>
       )}
+
       <Footer />
     </div>
   );
