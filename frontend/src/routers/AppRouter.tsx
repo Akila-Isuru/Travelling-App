@@ -9,6 +9,8 @@ import Destinations from "../pages/Destinations";
 import DestinationDetail from "../pages/DestinationDetail";
 import UserDashboard from "../pages/UserDashboard";
 import AdminDashboard from "../pages/AdminDashboard";
+import ItineraryBuilder from "../pages/ItineraryBuilder";
+import MyItineraries from "../pages/MyItineraries";
 
 const RequireAuth = ({
   children,
@@ -112,6 +114,30 @@ const AppRouter = () => {
           element={
             <RequireAuth roles={["ADMIN"]}>
               <AdminDashboard />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/itinerary-builder/:id"
+          element={
+            <RequireAuth>
+              <ItineraryBuilder />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/my-itineraries"
+          element={
+            <RequireAuth>
+              <MyItineraries />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/itinerary/:id"
+          element={
+            <RequireAuth>
+              <ItineraryBuilder />
             </RequireAuth>
           }
         />

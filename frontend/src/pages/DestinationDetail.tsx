@@ -12,6 +12,7 @@ import { useAuth } from "../hooks/useAuth";
 import api from "../api/axiosInspector";
 import { initiatePayment } from "../services/paymentService";
 import DestinationMap from "../components/DestinationMap";
+import AddToItineraryButton from "../components/AddToItineraryButton";
 
 type DestinationWithCoords = Destination & {
   coordinates?: {
@@ -79,8 +80,6 @@ const DestinationDetail = () => {
               },
             });
             const durationSec = response.data.duration;
-          
-            console.log("Travel time for", dest.name, ":", durationSec);
             if (durationSec) {
               const hours = Math.floor(durationSec / 3600);
               const minutes = Math.floor((durationSec % 3600) / 60);
@@ -92,10 +91,6 @@ const DestinationDetail = () => {
           }
         }),
       );
-      
-      setTravelTimes({ ...times });
-      console.log("Final travelTimes:", times);
-
       setTravelTimes({ ...times });
     } catch (err) {
       console.error(err);
@@ -420,7 +415,7 @@ const DestinationDetail = () => {
               </motion.div>
             )}
 
-            
+            {/* Reviews Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -464,7 +459,7 @@ const DestinationDetail = () => {
             </motion.div>
           </div>
 
-          
+          {/* Right Column - Booking Card */}
           <div className="lg:col-span-1">
             <div className="sticky top-24">
               <motion.div
@@ -597,7 +592,7 @@ const DestinationDetail = () => {
                     >
                       <div className="flex justify-between text-xs font-light text-gray-400">
                         <span>
-                          ${destination.pricePerNight} x {calcNights()} nights x{" "}
+                          ${destination.pricePerNight} × {calcNights()} nights ×{" "}
                           {bookingData.guests} guest
                           {bookingData.guests > 1 ? "s" : ""}
                         </span>
@@ -641,6 +636,14 @@ const DestinationDetail = () => {
                   >
                     View My Bookings
                   </button>
+                  {/* ✅ Add to Itinerary Button */}
+                  <AddToItineraryButton
+                    destinationId={destination._id}
+                    destinationName={destination.name}
+                    defaultCheckIn={bookingData.checkIn}
+                    defaultCheckOut={bookingData.checkOut}
+                    defaultGuests={bookingData.guests}
+                  />
                 </div>
               </motion.div>
             </div>
@@ -669,7 +672,7 @@ const DestinationDetail = () => {
         </motion.div>
       )}
 
-      
+      {/* Nearby Destinations Cards */}
       {nearbyDestinations.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -703,8 +706,6 @@ const DestinationDetail = () => {
                     {dest.name}
                   </h4>
                   <p className="text-gray-400 text-xs">{dest.location}</p>
-
-                  {/* Distance + Travel time row */}
                   <div className="flex items-center gap-3 mt-2 mb-2">
                     {dest.distance && (
                       <span className="flex items-center gap-1 text-gray-400 text-[11px]">
@@ -752,12 +753,10 @@ const DestinationDetail = () => {
                       </span>
                     )}
                   </div>
-
                   <div className="flex justify-between items-center mt-1">
                     <span className="text-[#C9922A] text-sm">
                       ${dest.pricePerNight}/night
                     </span>
-                   
                     <a
                       href={`/destination/${dest.slug}`}
                       className="text-[10px] tracking-widest uppercase text-[#1a3a5c] hover:text-[#C9922A]"

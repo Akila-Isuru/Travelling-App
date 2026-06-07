@@ -12,11 +12,11 @@ export interface IBooking extends Document {
   specialRequests?: string;
   createdAt: Date;
 
-  
   paymentStatus: "pending" | "paid" | "failed";
   paymentId: string;
   paymentMethod: string;
   paymentAmount: number;
+  itineraryId?: mongoose.Types.ObjectId;
 }
 
 const bookingSchema = new Schema<IBooking>(
@@ -58,7 +58,7 @@ const bookingSchema = new Schema<IBooking>(
       type: String,
       default: "",
     },
-    
+
     paymentStatus: {
       type: String,
       enum: ["pending", "paid", "failed"],
@@ -75,6 +75,11 @@ const bookingSchema = new Schema<IBooking>(
     paymentAmount: {
       type: Number,
       default: 0,
+    },
+    itineraryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Itinerary",
+      default: null,
     },
   },
   {

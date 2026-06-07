@@ -25,6 +25,7 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       guests,
       specialRequests,
       totalPrice,
+      itineraryId: req.body.itineraryId || null,
     });
 
     const saved = await newBooking.save();

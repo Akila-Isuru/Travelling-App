@@ -26,7 +26,7 @@ const Navbar = () => {
     { name: "What's New", path: "/" },
     { name: "What To Do", path: "/destinations" },
     { name: "Where To Go", path: "/destinations" },
-    { name: "Plan Your Trip", path: "/plan" },
+    { name: "Plan Your Trip", path: "/my-itineraries" },
     { name: "Events", path: "/events" },
   ];
 

@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import BookingModel from "../models/bookingModel";
+import ItineraryModel from "../models/itineraryModel";
+import UserModel from "../models/userModel";
 import crypto from "crypto";
-
+import { AuthRequest } from "../middleware/auth";
 const MERCHANT_ID = process.env.MERCHANT_ID as string;
 const MERCHANT_SECRET = process.env.MERCHANT_SECRET as string;
 const SANDBOX = process.env.PAYHERE_SANDBOX === "true";
@@ -133,6 +135,38 @@ export const handleNotification = async (req: Request, res: Response) => {
       console.error("Hash mismatch");
       return res.status(400).send("Hash verification failed");
     }
+    if (order_id.startsWith("ITIN_")) {
+      const itineraryId = order_id.replace("ITIN_", "");
+      const itinerary = await ItineraryModel.findById(itineraryId);
+      if (!itinerary) {
+        console.error("Itinerary not found");
+        return res.status(404).send("Itinerary not found");
+      }
+
+      if (status_code === "2") {
+        await BookingModel.updateMany(
+          { itineraryId: itinerary._id },
+          {
+            paymentStatus: "paid",
+            paymentId: payment_id,
+            paymentMethod: method,
+            status: "confirmed",
+          },
+        );
+        console.log(`Itinerary ${itineraryId} paid, all bookings confirmed.`);
+      } else if (status_code === "-2") {
+        await BookingModel.updateMany(
+          { itineraryId: itinerary._id },
+          { paymentStatus: "failed" },
+        );
+      } else if (status_code === "-1") {
+        await BookingModel.updateMany(
+          { itineraryId: itinerary._id },
+          { status: "cancelled", paymentStatus: "failed" },
+        );
+      }
+      return res.status(200).send("OK");
+    }
 
     const booking = await BookingModel.findById(order_id);
     if (!booking) {
@@ -162,5 +196,65 @@ export const handleNotification = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).send("Error processing notification");
+  }
+};
+
+export const initiateItineraryPayment = async (
+  req: AuthRequest,
+  res: Response,
+) => {
+  try {
+    const { itineraryId } = req.body;
+    const itinerary = await ItineraryModel.findOne({
+      _id: itineraryId,
+      user: req.user.sub,
+    }).populate("destinations.destinationId");
+
+    if (!itinerary) {
+      return res.status(404).json({ message: "Itinerary not found" });
+    }
+
+    const amount = itinerary.totalPrice.toFixed(2);
+    const orderId = `ITIN_${itinerary._id}`; // prefix to differentiate from single bookings
+    const items = `Itinerary: ${itinerary.name} (${itinerary.destinations.length} destinations)`;
+
+    const user = await UserModel.findById(req.user.sub);
+    const nameParts = user?.name?.split(" ") || ["Guest", "User"];
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(" ") || "User";
+
+    const hash = generatePayhereHash(
+      MERCHANT_ID,
+      orderId,
+      amount,
+      "LKR",
+      MERCHANT_SECRET,
+    );
+
+    const paymentData = {
+      sandbox: SANDBOX,
+      merchant_id: MERCHANT_ID,
+      return_url: `${FRONTEND_URL}/payment/return`,
+      cancel_url: `${FRONTEND_URL}/payment/cancel`,
+      notify_url: `${BACKEND_URL}/api/v1/payment/notify`,
+      order_id: orderId,
+      items: items,
+      amount: amount,
+      currency: "LKR",
+      hash: hash,
+      first_name: firstName,
+      last_name: lastName,
+      email: user?.email || "",
+      phone: "0771234567",
+      address: "Colombo",
+      city: "Colombo",
+      country: "Sri Lanka",
+    };
+
+    console.log("Itinerary Payment Initiation Data:", paymentData);
+    res.json(paymentData);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error initiating itinerary payment" });
   }
 };
