@@ -11,6 +11,7 @@ import UserDashboard from "../pages/UserDashboard";
 import AdminDashboard from "../pages/AdminDashboard";
 import ItineraryBuilder from "../pages/ItineraryBuilder";
 import MyItineraries from "../pages/MyItineraries";
+import StayDetail from "../pages/StayDetail";
 
 const RequireAuth = ({
   children,
@@ -138,6 +139,14 @@ const AppRouter = () => {
           element={
             <RequireAuth>
               <ItineraryBuilder />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/stay/:slug"
+          element={
+            <RequireAuth>
+              <StayDetail />
             </RequireAuth>
           }
         />

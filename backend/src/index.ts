@@ -10,6 +10,7 @@ import paymentRouter from "./routers/paymentRouter";
 import adminRouter from "./routers/adminRouter";
 import travelRouter from "./routers/travelRouter";
 import itineraryRouter from "./routers/itineraryRouter";
+import stayRouter from "./routers/stayRouter";
 import passport from "passport";
 import "./config/passport";
 
@@ -33,6 +34,7 @@ app.use("/api/v1/payment", paymentRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/travel", travelRouter);
 app.use("/api/v1/itineraries", itineraryRouter);
+app.use("/api/v1/stays", stayRouter);
 
 mongoose
   .connect(DB_URL)

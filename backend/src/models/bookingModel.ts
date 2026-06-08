@@ -17,6 +17,7 @@ export interface IBooking extends Document {
   paymentMethod: string;
   paymentAmount: number;
   itineraryId?: mongoose.Types.ObjectId;
+  stayId?: mongoose.Types.ObjectId;
 }
 
 const bookingSchema = new Schema<IBooking>(
@@ -79,6 +80,11 @@ const bookingSchema = new Schema<IBooking>(
     itineraryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Itinerary",
+      default: null,
+    },
+    stayId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Stay",
       default: null,
     },
   },

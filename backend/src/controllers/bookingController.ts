@@ -2,10 +2,17 @@ import { Request, Response } from "express";
 import BookingModel from "../models/bookingModel";
 import DestinationModel from "../models/destinationModel";
 import { AuthRequest } from "../middleware/auth";
+import StayModel from "../models/stayModel";
+
+const calcNights = (checkIn: Date, checkOut: Date): number => {
+  const diff = new Date(checkOut).getTime() - new Date(checkIn).getTime();
+  return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+};
 
 export const createBooking = async (req: AuthRequest, res: Response) => {
   const {
     destination,
+    stayId,
     checkIn,
     checkOut,
     guests,
@@ -17,14 +24,31 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
     if (!dest)
       return res.status(404).json({ message: "Destination not found" });
 
+    const nights = calcNights(new Date(checkIn), new Date(checkOut));
+    let totalPriceCalculated = totalPrice;
+
+    if (stayId) {
+      const stay = await StayModel.findById(stayId);
+      if (stay) {
+        totalPriceCalculated =
+          nights * dest.pricePerNight * guests +
+          nights * stay.pricePerNight * guests;
+      } else {
+        return res.status(404).json({ message: "Selected stay not found" });
+      }
+    } else {
+      totalPriceCalculated = nights * dest.pricePerNight * guests;
+    }
+
     const newBooking = new BookingModel({
       user: req.user.sub,
       destination,
+      stayId: stayId || null,
       checkIn,
       checkOut,
       guests,
       specialRequests,
-      totalPrice,
+      totalPrice: totalPriceCalculated,
       itineraryId: req.body.itineraryId || null,
     });
 
@@ -33,6 +57,7 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       "destination",
       "name slug location images pricePerNight",
     );
+    if (stayId) await saved.populate("stayId", "name pricePerNight"); // populate stay info if needed
     res.status(201).json({ message: "Booking created!", data: saved });
   } catch (error) {
     console.error(error);
