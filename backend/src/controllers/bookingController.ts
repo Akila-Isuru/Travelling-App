@@ -10,34 +10,31 @@ const calcNights = (checkIn: Date, checkOut: Date): number => {
 };
 
 export const createBooking = async (req: AuthRequest, res: Response) => {
-  const {
-    destination,
-    stayId,
-    checkIn,
-    checkOut,
-    guests,
-    specialRequests,
-    totalPrice,
-  } = req.body;
+  const { destination, stayId, checkIn, checkOut, guests, specialRequests } =
+    req.body;
+
   try {
     const dest = await DestinationModel.findById(destination);
     if (!dest)
       return res.status(404).json({ message: "Destination not found" });
 
     const nights = calcNights(new Date(checkIn), new Date(checkOut));
-    let totalPriceCalculated = totalPrice;
+
+    if (nights < 1) {
+      return res
+        .status(400)
+        .json({ message: "Check-out must be after check-in." });
+    }
+
+
+    let totalPriceCalculated = nights * dest.pricePerNight * guests;
 
     if (stayId) {
       const stay = await StayModel.findById(stayId);
-      if (stay) {
-        totalPriceCalculated =
-          nights * dest.pricePerNight * guests +
-          nights * stay.pricePerNight * guests;
-      } else {
+      if (!stay) {
         return res.status(404).json({ message: "Selected stay not found" });
       }
-    } else {
-      totalPriceCalculated = nights * dest.pricePerNight * guests;
+      totalPriceCalculated += nights * stay.pricePerNight * guests;
     }
 
     const newBooking = new BookingModel({
@@ -49,15 +46,21 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       guests,
       specialRequests,
       totalPrice: totalPriceCalculated,
+      paymentAmount: totalPriceCalculated,
       itineraryId: req.body.itineraryId || null,
     });
 
     const saved = await newBooking.save();
+
     await saved.populate(
       "destination",
       "name slug location images pricePerNight",
     );
-    if (stayId) await saved.populate("stayId", "name pricePerNight"); // populate stay info if needed
+
+    if (stayId) {
+      await saved.populate("stayId", "name pricePerNight images location");
+    }
+
     res.status(201).json({ message: "Booking created!", data: saved });
   } catch (error) {
     console.error(error);
@@ -69,6 +72,7 @@ export const getMyBookings = async (req: AuthRequest, res: Response) => {
   try {
     const bookings = await BookingModel.find({ user: req.user.sub })
       .populate("destination", "name slug location images pricePerNight")
+      .populate("stayId", "name pricePerNight images location")
       .sort({ createdAt: -1 });
     res.status(200).json({ data: bookings });
   } catch (error) {
@@ -81,7 +85,10 @@ export const getBookingById = async (req: AuthRequest, res: Response) => {
     const booking = await BookingModel.findOne({
       _id: req.params.id,
       user: req.user.sub,
-    }).populate("destination", "name slug location images pricePerNight");
+    })
+      .populate("destination", "name slug location images pricePerNight")
+      .populate("stayId", "name pricePerNight images location");
+
     if (!booking) return res.status(404).json({ message: "Booking not found" });
     res.status(200).json({ data: booking });
   } catch (error) {
@@ -111,6 +118,7 @@ export const getAllBookings = async (req: Request, res: Response) => {
   try {
     const bookings = await BookingModel.find()
       .populate("destination", "name slug location images pricePerNight")
+      .populate("stayId", "name pricePerNight")
       .populate("user", "name email")
       .sort({ createdAt: -1 });
     res.status(200).json({ data: bookings });

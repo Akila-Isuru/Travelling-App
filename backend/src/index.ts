@@ -12,6 +12,8 @@ import travelRouter from "./routers/travelRouter";
 import itineraryRouter from "./routers/itineraryRouter";
 import stayRouter from "./routers/stayRouter";
 import passport from "passport";
+import aiRouter from "./routers/aiRouter";
+import chatRouter from "./routers/chatRouter";
 import "./config/passport";
 
 dotenv.config();
@@ -35,6 +37,7 @@ app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/travel", travelRouter);
 app.use("/api/v1/itineraries", itineraryRouter);
 app.use("/api/v1/stays", stayRouter);
+app.use("/api/v1/chat", chatRouter);
 
 mongoose
   .connect(DB_URL)

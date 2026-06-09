@@ -23,7 +23,7 @@ const DestinationGrid = () => {
   const fetchDestinations = async () => {
     setLoading(true);
     try {
-      const res = await getAllDestinations(search);
+      const res = await getAllDestinations({ search });
       setDestinations(res.data);
     } catch (error) {
       console.error("Error fetching destinations:", error);
