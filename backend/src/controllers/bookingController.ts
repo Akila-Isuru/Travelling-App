@@ -10,24 +10,25 @@ const calcNights = (checkIn: Date, checkOut: Date): number => {
 };
 
 export const createBooking = async (req: AuthRequest, res: Response) => {
-  const { destination, stayId, checkIn, checkOut, guests, specialRequests } =
-    req.body;
+  const { destination, stayId, checkIn, checkOut, guests, specialRequests } = req.body;
 
   try {
-    const dest = await DestinationModel.findById(destination);
-    if (!dest)
-      return res.status(404).json({ message: "Destination not found" });
-
     const nights = calcNights(new Date(checkIn), new Date(checkOut));
-
     if (nights < 1) {
-      return res
-        .status(400)
-        .json({ message: "Check-out must be after check-in." });
+      return res.status(400).json({ message: "Check-out must be after check-in." });
     }
 
+    let totalPriceCalculated = 0;
+    let bookingDestination = null;
 
-    let totalPriceCalculated = nights * dest.pricePerNight * guests;
+    if (destination) {
+      const dest = await DestinationModel.findById(destination);
+      if (!dest) {
+        return res.status(404).json({ message: "Destination not found" });
+      }
+      totalPriceCalculated += nights * dest.pricePerNight * guests;
+      bookingDestination = destination;
+    }
 
     if (stayId) {
       const stay = await StayModel.findById(stayId);
@@ -37,9 +38,13 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       totalPriceCalculated += nights * stay.pricePerNight * guests;
     }
 
+    if (totalPriceCalculated === 0) {
+      return res.status(400).json({ message: "No valid destination or stay selected." });
+    }
+
     const newBooking = new BookingModel({
       user: req.user.sub,
-      destination,
+      destination: bookingDestination,
       stayId: stayId || null,
       checkIn,
       checkOut,
@@ -52,11 +57,9 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
 
     const saved = await newBooking.save();
 
-    await saved.populate(
-      "destination",
-      "name slug location images pricePerNight",
-    );
-
+    if (bookingDestination) {
+      await saved.populate("destination", "name slug location images pricePerNight");
+    }
     if (stayId) {
       await saved.populate("stayId", "name pricePerNight images location");
     }

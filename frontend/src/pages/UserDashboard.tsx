@@ -16,7 +16,15 @@ interface Booking {
     location: string;
     images: string[];
     pricePerNight: number;
-  };
+  } | null;
+  stayId: {
+    _id: string;
+    name: string;
+    slug: string;
+    location: string;
+    images: string[];
+    pricePerNight: number;
+  } | null;
   checkIn: string;
   checkOut: string;
   guests: number;
@@ -100,12 +108,38 @@ const UserDashboard = () => {
       .reduce((s, b) => s + b.totalPrice, 0),
   };
 
+  // Helper to get item name for display
+  const getItemName = (b: Booking) => {
+    if (b.destination) return b.destination.name;
+    if (b.stayId) return b.stayId.name;
+    return "Booking";
+  };
+
+  const getItemLocation = (b: Booking) => {
+    if (b.destination) return b.destination.location;
+    if (b.stayId) return b.stayId.location;
+    return "";
+  };
+
+  const getItemImage = (b: Booking) => {
+    if (b.destination && b.destination.images?.length)
+      return b.destination.images[0];
+    if (b.stayId && b.stayId.images?.length) return b.stayId.images[0];
+    return "https://images.unsplash.com/photo-1587560699334-bea93391dcef?w=400";
+  };
+
+  const getItemLink = (b: Booking) => {
+    if (b.destination) return `/destination/${b.destination.slug}`;
+    if (b.stayId) return `/stay/${b.stayId.slug}`;
+    return "#";
+  };
+
   return (
     <div className="bg-[#faf8f4] min-h-screen">
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap');`}</style>
       <Navbar />
 
-      {/* Header */}
+      {/* Header (unchanged) */}
       <div className="bg-[#0a1628] pt-28 pb-16 relative overflow-hidden">
         <div
           className="absolute inset-0 opacity-[0.04]"
@@ -252,11 +286,8 @@ const UserDashboard = () => {
                   {/* Image */}
                   <div className="sm:w-48 h-36 sm:h-auto flex-shrink-0 overflow-hidden">
                     <img
-                      src={
-                        booking.destination?.images?.[0] ||
-                        "https://images.unsplash.com/photo-1587560699334-bea93391dcef?w=400"
-                      }
-                      alt={booking.destination?.name}
+                      src={getItemImage(booking)}
+                      alt={getItemName(booking)}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
@@ -273,7 +304,7 @@ const UserDashboard = () => {
                           }}
                           className="text-[#1a3a5c] font-light"
                         >
-                          {booking.destination?.name || "Destination"}
+                          {getItemName(booking)}
                         </h3>
                         <span
                           className={`flex-shrink-0 text-[10px] tracking-[0.15em] uppercase border px-2 py-0.5 font-light ${statusColors[booking.status]}`}
@@ -300,32 +331,34 @@ const UserDashboard = () => {
                             d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0z"
                           />
                         </svg>
-                        {booking.destination?.location}
+                        {getItemLocation(booking)}
                       </p>
                       <div className="grid grid-cols-3 gap-3">
-                        {[
-                          {
-                            label: "Check-In",
-                            value: formatDate(booking.checkIn),
-                          },
-                          {
-                            label: "Check-Out",
-                            value: formatDate(booking.checkOut),
-                          },
-                          {
-                            label: "Duration",
-                            value: `${nights(booking)} night${nights(booking) > 1 ? "s" : ""}`,
-                          },
-                        ].map((d) => (
-                          <div key={d.label}>
-                            <p className="text-[9px] tracking-[0.2em] uppercase text-gray-300 font-light">
-                              {d.label}
-                            </p>
-                            <p className="text-[#1a3a5c] text-xs font-light mt-0.5">
-                              {d.value}
-                            </p>
-                          </div>
-                        ))}
+                        <div>
+                          <p className="text-[9px] tracking-[0.2em] uppercase text-gray-300 font-light">
+                            Check-In
+                          </p>
+                          <p className="text-[#1a3a5c] text-xs font-light mt-0.5">
+                            {formatDate(booking.checkIn)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] tracking-[0.2em] uppercase text-gray-300 font-light">
+                            Check-Out
+                          </p>
+                          <p className="text-[#1a3a5c] text-xs font-light mt-0.5">
+                            {formatDate(booking.checkOut)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] tracking-[0.2em] uppercase text-gray-300 font-light">
+                            Duration
+                          </p>
+                          <p className="text-[#1a3a5c] text-xs font-light mt-0.5">
+                            {nights(booking)} night
+                            {nights(booking) > 1 ? "s" : ""}
+                          </p>
+                        </div>
                       </div>
                       {booking.specialRequests && (
                         <p className="text-gray-300 text-xs font-light mt-3 italic">
@@ -352,11 +385,7 @@ const UserDashboard = () => {
                       </div>
                       <div className="flex flex-col gap-2">
                         <button
-                          onClick={() =>
-                            navigate(
-                              `/destination/${booking.destination?.slug}`,
-                            )
-                          }
+                          onClick={() => navigate(getItemLink(booking))}
                           className="px-4 py-1.5 border border-[#1a3a5c]/20 text-[#1a3a5c] text-[10px] tracking-[0.15em] uppercase font-light hover:border-[#C9922A] hover:text-[#C9922A] transition-colors"
                         >
                           View
