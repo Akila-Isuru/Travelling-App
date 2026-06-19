@@ -10,17 +10,21 @@ const calcNights = (checkIn: Date, checkOut: Date): number => {
 };
 
 export const createBooking = async (req: AuthRequest, res: Response) => {
-  const { destination, stayId, checkIn, checkOut, guests, specialRequests } = req.body;
+  const { destination, stayId, checkIn, checkOut, guests, specialRequests } =
+    req.body;
 
   try {
     const nights = calcNights(new Date(checkIn), new Date(checkOut));
     if (nights < 1) {
-      return res.status(400).json({ message: "Check-out must be after check-in." });
+      return res
+        .status(400)
+        .json({ message: "Check-out must be after check-in." });
     }
 
     let totalPriceCalculated = 0;
     let bookingDestination = null;
 
+    // ✅ Destination price calculate (required)
     if (destination) {
       const dest = await DestinationModel.findById(destination);
       if (!dest) {
@@ -30,22 +34,34 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       bookingDestination = destination;
     }
 
+    // ✅ Stay price calculate (OPTIONAL - only if stayId provided)
     if (stayId) {
       const stay = await StayModel.findById(stayId);
       if (!stay) {
         return res.status(404).json({ message: "Selected stay not found" });
       }
+      // Verify stay belongs to this destination
+      if (
+        bookingDestination &&
+        stay.destinationId.toString() !== bookingDestination.toString()
+      ) {
+        return res.status(400).json({
+          message: "Selected stay does not belong to this destination",
+        });
+      }
       totalPriceCalculated += nights * stay.pricePerNight * guests;
     }
 
     if (totalPriceCalculated === 0) {
-      return res.status(400).json({ message: "No valid destination or stay selected." });
+      return res
+        .status(400)
+        .json({ message: "No valid destination or stay selected." });
     }
 
     const newBooking = new BookingModel({
       user: req.user.sub,
       destination: bookingDestination,
-      stayId: stayId || null,
+      stayId: stayId || null, // ✅ null if no stay selected
       checkIn,
       checkOut,
       guests,
@@ -57,9 +73,14 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
 
     const saved = await newBooking.save();
 
+    // Populate destination details for response
     if (bookingDestination) {
-      await saved.populate("destination", "name slug location images pricePerNight");
+      await saved.populate(
+        "destination",
+        "name slug location images pricePerNight",
+      );
     }
+    // ✅ Populate stay details if stay selected (optional)
     if (stayId) {
       await saved.populate("stayId", "name pricePerNight images location");
     }
@@ -75,7 +96,7 @@ export const getMyBookings = async (req: AuthRequest, res: Response) => {
   try {
     const bookings = await BookingModel.find({ user: req.user.sub })
       .populate("destination", "name slug location images pricePerNight")
-      .populate("stayId", "name pricePerNight images location")
+      .populate("stayId", "name pricePerNight images location") // ✅ Always populate stay details
       .sort({ createdAt: -1 });
     res.status(200).json({ data: bookings });
   } catch (error) {
@@ -89,8 +110,14 @@ export const getBookingById = async (req: AuthRequest, res: Response) => {
       _id: req.params.id,
       user: req.user.sub,
     })
-      .populate("destination", "name slug location images pricePerNight")
-      .populate("stayId", "name pricePerNight images location");
+      .populate(
+        "destination",
+        "name slug location images pricePerNight description",
+      )
+      .populate(
+        "stayId",
+        "name pricePerNight images location address amenities contactPhone",
+      ); // ✅ Full stay details
 
     if (!booking) return res.status(404).json({ message: "Booking not found" });
     res.status(200).json({ data: booking });
@@ -121,7 +148,7 @@ export const getAllBookings = async (req: Request, res: Response) => {
   try {
     const bookings = await BookingModel.find()
       .populate("destination", "name slug location images pricePerNight")
-      .populate("stayId", "name pricePerNight")
+      .populate("stayId", "name pricePerNight images location") // ✅ Stay details for admin
       .populate("user", "name email")
       .sort({ createdAt: -1 });
     res.status(200).json({ data: bookings });
@@ -143,6 +170,7 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
       { new: true },
     )
       .populate("destination", "name slug location")
+      .populate("stayId", "name pricePerNight")
       .populate("user", "name email");
     if (!booking) return res.status(404).json({ message: "Booking not found" });
     res.status(200).json({ message: "Status updated", data: booking });

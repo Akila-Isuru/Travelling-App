@@ -1,4 +1,4 @@
-import mongoose, { model, Document,Schema} from "mongoose";
+import mongoose, { model, Document, Schema } from "mongoose";
 
 export enum UserRole {
   ADMIN = "ADMIN",

@@ -42,8 +42,10 @@ const generatePayhereHash = (
 export const initiatePayment = async (req: Request, res: Response) => {
   try {
     const { bookingId } = req.body;
+    // ✅ Populate destination, stay, and user details
     const booking = await BookingModel.findById(bookingId)
       .populate("destination")
+      .populate("stayId") // ✅ Add stay details for payment description
       .populate("user", "name email");
 
     if (!booking) {
@@ -51,12 +53,18 @@ export const initiatePayment = async (req: Request, res: Response) => {
     }
 
     const destination = booking.destination as any;
+    const stay = booking.stayId as any; // ✅ Get stay details
     const user = booking.user as any;
 
     const orderId = booking._id.toString();
     const amount = booking.totalPrice.toFixed(2);
     const currency = "LKR";
-    const items = `Booking: ${destination.name}`;
+
+    // ✅ Include stay name in payment items if stay selected
+    let items = `Booking: ${destination.name}`;
+    if (stay) {
+      items += ` + ${stay.name}`;
+    }
 
     const nameParts = user.name.split(" ");
     const firstName = nameParts[0] || "Guest";
@@ -135,6 +143,8 @@ export const handleNotification = async (req: Request, res: Response) => {
       console.error("Hash mismatch");
       return res.status(400).send("Hash verification failed");
     }
+
+    // Handle itinerary payments
     if (order_id.startsWith("ITIN_")) {
       const itineraryId = order_id.replace("ITIN_", "");
       const itinerary = await ItineraryModel.findById(itineraryId);
@@ -168,6 +178,7 @@ export const handleNotification = async (req: Request, res: Response) => {
       return res.status(200).send("OK");
     }
 
+    // Handle single booking payment
     const booking = await BookingModel.findById(order_id);
     if (!booking) {
       console.error("Booking not found");
@@ -175,6 +186,7 @@ export const handleNotification = async (req: Request, res: Response) => {
     }
 
     if (status_code === "2") {
+      // ✅ Payment successful
       booking.paymentStatus = "paid";
       booking.paymentId = payment_id;
       booking.paymentMethod = method;
@@ -182,10 +194,12 @@ export const handleNotification = async (req: Request, res: Response) => {
       await booking.save();
       console.log(`Booking ${order_id} confirmed.`);
     } else if (status_code === "-2") {
+      // ✅ Payment failed
       booking.paymentStatus = "failed";
       await booking.save();
       console.log(`Payment for booking ${order_id} failed.`);
     } else if (status_code === "-1") {
+      // ✅ Payment cancelled
       booking.status = "cancelled";
       booking.paymentStatus = "failed";
       await booking.save();
