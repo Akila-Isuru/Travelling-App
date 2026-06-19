@@ -137,13 +137,6 @@ const UserDashboard = () => {
     return null;
   };
 
-  // ✅ Helper: Get main link (destination or stay)
-  const getMainLink = (b: Booking) => {
-    if (b.destination) return `/destination/${b.destination.slug}`;
-    if (b.stayId) return `/stay/${b.stayId.slug}`;
-    return "#";
-  };
-
   // ✅ Helper: Check if booking has both destination and stay
   const hasBothItems = (b: Booking) => {
     return b.destination && b.stayId;
@@ -457,25 +450,13 @@ const UserDashboard = () => {
                         </p>
                       </div>
                       <div className="flex flex-col gap-2">
-                        {/* ✅ View button - goes to destination page (or stay if no destination) */}
+                        {/* ✅ UPDATED: View button - now goes to Booking Detail page */}
                         <button
-                          onClick={() => navigate(getMainLink(booking))}
+                          onClick={() => navigate(`/booking/${booking._id}`)}
                           className="px-4 py-1.5 border border-[#1a3a5c]/20 text-[#1a3a5c] text-[10px] tracking-[0.15em] uppercase font-light hover:border-[#C9922A] hover:text-[#C9922A] transition-colors"
                         >
-                          View
+                          View Details
                         </button>
-
-                        {/* ✅ Extra View Stay button (only if both items exist) */}
-                        {hasBothItems(booking) && (
-                          <button
-                            onClick={() =>
-                              navigate(`/stay/${booking.stayId!.slug}`)
-                            }
-                            className="px-4 py-1.5 border border-[#C9922A]/20 text-[#C9922A] text-[10px] tracking-[0.15em] uppercase font-light hover:bg-[#C9922A]/5 transition-colors"
-                          >
-                            View Stay
-                          </button>
-                        )}
 
                         {booking.status === "pending" && (
                           <button

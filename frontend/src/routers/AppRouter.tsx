@@ -13,6 +13,7 @@ import ItineraryBuilder from "../pages/ItineraryBuilder";
 import MyItineraries from "../pages/MyItineraries";
 import StayDetail from "../pages/StayDetail";
 import WeatherWidget from "../pages/WeatherWidget";
+import BookingDetail from "../pages/BookingDetail";
 
 const PaymentReturn = () => (
   <div className="min-h-screen bg-[#faf8f4] flex items-center justify-center">
@@ -178,6 +179,7 @@ const AppRouter = () => {
         <Route path="/oauth-callback" element={<OAuthCallback />} />
         <Route path="/payment/return" element={<PaymentReturn />} />
         <Route path="/payment/cancel" element={<PaymentCancel />} />
+
         <Route
           path="/"
           element={
@@ -215,6 +217,15 @@ const AppRouter = () => {
           element={
             <RequireAuth>
               <UserDashboard />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/booking/:id"
+          element={
+            <RequireAuth>
+              <BookingDetail />
             </RequireAuth>
           }
         />
@@ -259,6 +270,7 @@ const AppRouter = () => {
             </RequireAuth>
           }
         />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
